@@ -1,0 +1,41 @@
+{
+    "name": "webgpu-cca",
+    "version": "0.1.0",
+    "description": "",
+    "main": "dist/main.js",
+    "scripts": {
+        "start": "npm i && npm run build && npm run dev",
+        "dev": "http-server",
+        "build": "webpack --config webpack.prod.js && npm run compile-shaders",
+        "compile-shaders": "node scripts/compile-shaders.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dawidgorny/webgpu-cca.git"
+    },
+    "keywords": [
+        "webgpu",
+        "webgl",
+        "typescript"
+    ],
+    "author": "Dawid Gorny",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/dawidgorny/webgpu-cca/issues"
+    },
+    "homepage": "https://github.com/dawidgorny/webgpu-cca#readme",
+    "devDependencies": {
+        "@types/node": "^13.1.0",
+        "@webgpu/types": "0.0.19",
+        "http-server": "^0.12.0",
+        "ts-loader": "^6.2.1",
+        "typescript": "^3.7.5",
+        "uglifyjs-webpack-plugin": "^2.2.0",
+        "webpack": "^4.41.5",
+        "webpack-cli": "^3.3.10",
+        "webpack-merge": "^4.2.2"
+    },
+    "dependencies": {
+        
+    }
+}

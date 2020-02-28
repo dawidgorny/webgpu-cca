@@ -1,3 +1,39 @@
+# Dependency directory
+modules/
+ts-node--*/
+rss.xml
+
+# Runtime data
+*.ssh
+*.ppk
+v8-compile-cache-0/
+Thumbs.db
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (http://nodejs.org/api/addons.html)
+build/Release
+bin
+ts-node
+
+# Personal Scripts
+*.bat
+*.ssh
+*.sh
+!system.min.js
+
+# Editors
+.vscode
+.markdownlint.json
+
+# Build Files
+temp
+*.js
+*.map
+!webpack.*
+
+
 # Logs
 logs
 *.log
