@@ -4,8 +4,8 @@
     "description": "",
     "main": "dist/main.js",
     "scripts": {
-        "start": "npm i && npm run build && npm run dev",
-        "dev": "http-server",
+        "start": "npm run build && npm run dev",
+        "dev": "http-server -a localhost",
         "build": "webpack --config webpack.prod.js && npm run compile-shaders",
         "compile-shaders": "node scripts/compile-shaders.js"
     },
@@ -31,11 +31,9 @@
         "ts-loader": "^6.2.1",
         "typescript": "^3.7.5",
         "uglifyjs-webpack-plugin": "^2.2.0",
-        "webpack": "^4.41.5",
-        "webpack-cli": "^3.3.10",
+        "webpack": "^4.41.6",
+        "webpack-cli": "^3.3.11",
         "webpack-merge": "^4.2.2"
     },
-    "dependencies": {
-        
-    }
+    "dependencies": {}
 }
