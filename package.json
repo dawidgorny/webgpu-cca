@@ -5,8 +5,9 @@
     "main": "dist/main.js",
     "scripts": {
         "start": "npm run build && npm run dev",
-        "dev": "http-server -a localhost",
+        "dev": "http-server",
         "build": "webpack --config webpack.prod.js && npm run compile-shaders",
+        "build-dev": "webpack --config webpack.dev.js && npm run compile-shaders",
         "compile-shaders": "node scripts/compile-shaders.js"
     },
     "repository": {
