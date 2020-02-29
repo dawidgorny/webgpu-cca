@@ -1,3 +1,5 @@
+.DS_Store
+
 # Dependency directory
 modules/
 ts-node--*/
