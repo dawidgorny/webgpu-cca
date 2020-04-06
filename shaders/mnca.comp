@@ -2,41 +2,25 @@
 
 const int rows = 900;
 const int cols = 900;
+const int rowPitch = 3840;
 
 const int numCells = rows * cols;
-const int dataLength = 3840; // ceil(900 * 4 / 256) * 256;
 
-struct TexAttribData
-{
-	uvec4 c;
-};
-/*
 layout(std140, set = 0, binding = 0) uniform SimParams {
-    float deltaT;
-    float rule1Distance;
-    float rule2Distance;
-    float rule3Distance;
-    float rule1Scale;
-    float rule2Scale;
-    float rule3Scale;
+    float varx;
+    float vary;
 } params;
 
-layout(std140, set = 0, binding = 1) buffer CellsA {
-    uint cells[numCells];
-} cellsA;
+layout(std430, set = 0, binding = 1) buffer CerrentCells {
+    float data[];
+} currentCells;
 
-layout(std140, set = 0, binding = 2) buffer CellsB {
-    uint cells[numCells];
-} cellsB;
+layout(std430, set = 0, binding = 2) buffer Cells {
+    float data[];
+} cells;
 
-layout(std140, set = 0, binding = 3) buffer destBuffer {
-    TexAttribData data[numCells];
-} colorDestBuffer;
-*/
-// layout(rgba32f, binding = 4) uniform image2D img_output;
-
-layout(std140, set = 0, binding = 0) buffer ResultBuffer {
-    uvec4 data[numCells];
+layout(std430, set = 0, binding = 3) buffer ResultBuffer {
+    vec4 data[];
 } resultColorBuffer;
 
 const int states = 200;
@@ -46,12 +30,26 @@ void main() {
     // if (index >= numCells) { return; }
 
     ivec2 coords = ivec2(gl_GlobalInvocationID.xy); 
-    uint index = uint(coords.y * cols + coords.x);
+    uint row = coords.y;
+    uint col = coords.x;
+    uint idx = row * rowPitch / 4 + col;
+    uint cellIdx = row * rows + col;
     // if (index >= numCells) { return; }
 
     // resultColorBuffer.data[index] = uvec4(255.0 * float(coords.x) / float(900),10,10, 255);
     // resultColorBuffer.data[index] = uvec4(255,10,10, 255);
-    resultColorBuffer.data[index] = uvec4(1,0,0, 1);
+
+
+    float state = currentCells.data[cellIdx];
+
+    if (state > states) {
+        state = 0.0;
+    } else {
+        state += 1.0;
+    }
+
+    cells.data[cellIdx] = state;
+    resultColorBuffer.data[idx] = vec4(0,0.5, state / float(states), 1);
 
 
 

@@ -103,4 +103,7 @@ export function createBuffer (device: GPUDevice, arr: Float32Array | Uint16Array
     buffer.unmap();
     return buffer;
 };
-    
+
+export function range (start: number, end: number) {
+    return Array.from({length: (end - start)}, (v, k) => k + start);
+}
