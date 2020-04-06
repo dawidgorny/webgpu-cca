@@ -2,7 +2,7 @@
 
 // https://github.com/austinEng/webgpu-samples
 
-import { loadShader } from './loadShader'
+import { loadShader } from './helpers'
 
 const numParticles = 15000;
 let t = 0;
@@ -10,7 +10,7 @@ let t = 0;
 export default class Renderer {
     canvas: HTMLCanvasElement;
 
-    // ⚙️ API Data Structures
+    // API Data Structures
     adapter: GPUAdapter;
     device: GPUDevice;
     queue: GPUQueue;
@@ -37,35 +37,24 @@ export default class Renderer {
         this.canvas = canvas;
     }
 
-    // 🏎️ Start the rendering engine
+    // Start the rendering engine
     async start() {
         if (await this.initializeAPI()) {
-            // this.resizeBackings();
             await this.initializeResources();
             this.render();
         }
     }
 
-    // 🌟 Initialize WebGPU
+    // Initialize WebGPU
     async initializeAPI(): Promise<boolean> {
         try {
-            // 🏭 Entry to WebGPU
             const entry: GPU = navigator.gpu;
             if (!entry) {
                 return false;
             }
-
-            // 🔌 Physical Device Adapter
             this.adapter = await entry.requestAdapter();
-            console.log(this.adapter);
-
-            // 💻 Logical Device
             this.device = await this.adapter.requestDevice();
-            console.log(this.device);
-
-            // 📦 Queue
             this.queue = this.device.defaultQueue;
-            console.log(this.queue);
         } catch (e) {
             console.error(e);
             return false;
