@@ -1,6 +1,6 @@
 /// <reference path="../node_modules/@webgpu/types/index.d.ts" />
 
-import { loadShader, createTextureFromImage, align } from './helpers'
+import { loadShader, createTextureFromImage, align, createBuffer } from './helpers'
 
 // Position Vertex Buffer Data
 const positions = new Float32Array([
@@ -58,8 +58,6 @@ export default class Renderer {
     uvsBuffer: GPUBuffer;
     colorBuffer: GPUBuffer;
     indexBuffer: GPUBuffer;
-    textureBuffer: GPUBuffer;
-    textureSourceBuffer: GPUBuffer;
     vertModule: GPUShaderModule;
     fragModule: GPUShaderModule;
     compModule: GPUShaderModule;
@@ -70,13 +68,17 @@ export default class Renderer {
     passEncoder: GPURenderPassEncoder;
 
     uniformBindGroup: GPUBindGroup;
+    mainBindGroup: GPUBindGroup;
 
-    cellBuffers: Array<any>;
-    cellBindGroups: Array<any>;
+    rowPitch: number;
+
+    resultBufferSize: number;
+    resultBuffer: GPUBuffer;
 
     outTexture: GPUTexture;
     textureSourceData: Uint8Array;
     textureData: Uint8Array;
+    textureDataBuffer: GPUBuffer;
 
     constructor(canvas) {
         this.canvas = canvas;
@@ -124,31 +126,26 @@ export default class Renderer {
     async initializeResources() {
         console.log('initializeResources');
         // Buffers
-        let createBuffer = (arr: Float32Array | Uint16Array, usage: number) => {
-            let desc = { size: arr.byteLength, usage };
-            let [ buffer, bufferMapped ] = this.device.createBufferMapped(desc);
-            ``;
-            const writeArray =
-                arr instanceof Uint16Array ? new Uint16Array(bufferMapped) : new Float32Array(bufferMapped);
-            writeArray.set(arr);
-            buffer.unmap();
-            return buffer;
-        };
+        this.positionBuffer = createBuffer(this.device, positions, GPUBufferUsage.VERTEX);
+        this.uvsBuffer = createBuffer(this.device, uvs, GPUBufferUsage.VERTEX);
+        this.colorBuffer = createBuffer(this.device, colors, GPUBufferUsage.VERTEX);
+        this.indexBuffer = createBuffer(this.device, indices, GPUBufferUsage.INDEX);
 
-        this.positionBuffer = createBuffer(positions, GPUBufferUsage.VERTEX);
-        this.uvsBuffer = createBuffer(uvs, GPUBufferUsage.VERTEX);
-        this.colorBuffer = createBuffer(colors, GPUBufferUsage.VERTEX);
-        this.indexBuffer = createBuffer(indices, GPUBufferUsage.INDEX);
+        console.log("positions.values.length:" + positions.values.length);
+        console.log("positions.byteLength:" + positions.byteLength);
+
+        console.log("indices.values.length:" + indices.values.length);
+        console.log("indices.byteLength:" + indices.byteLength);
 
         try {
-            const vsmDesc: any = { code: await loadShader('/assets/shaders/mnca.vert.spv') };
+            const vsmDesc: any = { code: await loadShader('/assets/shaders/test.vert.spv') };
             this.vertModule = this.device.createShaderModule(vsmDesc);
         } catch (e) {
             console.error(e);
         }
         
         try {
-            const fsmDesc: any = { code: await loadShader('/assets/shaders/mnca.frag.spv') };
+            const fsmDesc: any = { code: await loadShader('/assets/shaders/test.frag.spv') };
             this.fragModule = this.device.createShaderModule(fsmDesc);
         } catch (e) {
             console.error(e);
@@ -268,8 +265,31 @@ export default class Renderer {
 
         //
 
-        // this.outTexture = await createTextureFromImage(this.device, 'assets/textures/test.png', GPUTextureUsage.SAMPLED);
+        const components = 4;
+        const rowPitch = this.rowPitch = align(rez * components, 256);
 
+        console.log("rowPitch:", rowPitch);
+        console.log("rez*rez*component", (rez * rez * components));
+        console.log("align rez*rez*components", (rowPitch / components) * rez);
+
+        const textureData = new Uint8Array(rowPitch * rez);
+
+        for (let i = 0; i < rowPitch * rez * components; i += 1) {
+            textureData[i] = 100;
+        }
+
+        for (let row = 0; row < rez; row++) {
+            for (let col = 0; col < rez; col++) {
+                const idx = row * rowPitch + col * components; // REMEMBER: rowPitch is already multiplied by number of components
+                textureData[idx + 0] = Math.ceil(255.0 * (row / rez));
+                textureData[idx + 1] = 0;
+                textureData[idx + 2] = 255 - Math.ceil(255.0 * (col / rez));
+                textureData[idx + 3] = 255;
+            }
+        }
+
+        this.textureDataBuffer = createBuffer(this.device, textureData,  GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE)
+        console.log("textureData.byteLength: " + textureData.byteLength); 
         this.outTexture = this.device.createTexture({
             size: { 
                 width: rez, 
@@ -280,63 +300,37 @@ export default class Renderer {
             usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.SAMPLED,
         });
 
-        const rowPitch = align(rez * 4, 256);
-        /*
-        this.textureData = new Uint8Array(rowPitch * rez);
-        for (let i = 0; i < rez * rez; ++i) {
-            this.textureData[4 * i + 0] = 35;
-            this.textureData[4 * i + 1] = 35;
-            this.textureData[4 * i + 2] = 35;
-            this.textureData[4 * i + 3] = 255;
-        }
-
-        this.textureBuffer = this.device.createBuffer({
-            size: this.textureData.byteLength,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
-        });
-        this.textureBuffer.setSubData(0, this.textureData);
-
         {
-            const commandEncoder = this.device.createCommandEncoder({});
+            const commandEncoder = this.device.createCommandEncoder(); 
+        
             commandEncoder.copyBufferToTexture({
-                buffer: this.textureBuffer,
-                rowPitch: rowPitch,
-                imageHeight: 0,
+                buffer: this.textureDataBuffer,
+                rowPitch, 
+                imageHeight: 0
             }, {
-                texture: this.outTexture,
+                texture: this.outTexture
             }, {
                 width: rez,
                 height: rez,
                 depth: 1,
             });
 
-            this.device.defaultQueue.submit([commandEncoder.finish()]);
-        }
-    */
-        // 
-/*
-        this.textureSourceData = new Uint8Array(rez * rez * 4);
-        for (let i = 0; i < rez * rez; ++i) {
-            this.textureSourceData[4 * i + 0] = 100;
-            this.textureSourceData[4 * i + 1] = 150;
-            this.textureSourceData[4 * i + 2] = 200;
-            this.textureSourceData[4 * i + 3] = 255;
+            this.queue.submit([ commandEncoder.finish() ]);
         }
 
-        this.textureSourceBuffer = this.device.createBuffer({
-            size: Uint8Array.BYTES_PER_ELEMENT * (rez * rez * 4),
-            usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE
-        });
-        this.textureSourceBuffer.setSubData(0, this.textureSourceData);
-*/
+        // this.outTexture = await createTextureFromImage(this.device, 'assets/textures/test.png', GPUTextureUsage.SAMPLED);
 
 
-        const textureSourceBufferSize = Uint8Array.BYTES_PER_ELEMENT * (rez * rez);
-        this.textureSourceBuffer = this.device.createBuffer({
-            size: textureSourceBufferSize,
+        // Result buffer
+        this.resultBufferSize = textureData.byteLength; //Uint8Array.BYTES_PER_ELEMENT * (rowPitch * rez);
+        // this.resultBufferSize = Float32Array.BYTES_PER_ELEMENT * (rowPitch * rez);
+
+        
+        console.log("this.resultBufferSize: " + this.resultBufferSize);
+        this.resultBuffer = this.device.createBuffer({
+            size: this.resultBufferSize,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
         });
-
         
         //
 
@@ -362,7 +356,7 @@ export default class Renderer {
         
         try {
             const csmDesc: any = { 
-                code: await loadShader('/assets/shaders/mnca.comp.spv') 
+                code: await loadShader('/assets/shaders/test.comp.spv') 
             };
             this.compModule = this.device.createShaderModule(csmDesc);
         } catch (e) {
@@ -371,10 +365,6 @@ export default class Renderer {
 
         const computeBindGroupLayout = this.device.createBindGroupLayout({
             bindings: [
-            //   { binding: 0, visibility: GPUShaderStage.COMPUTE, type: "uniform-buffer" },
-            //   { binding: 1, visibility: GPUShaderStage.COMPUTE, type: "storage-buffer" },
-            //   { binding: 2, visibility: GPUShaderStage.COMPUTE, type: "storage-buffer" },
-            //   { binding: 3, visibility: GPUShaderStage.COMPUTE, type: "storage-buffer" },
               { binding: 0, visibility: GPUShaderStage.COMPUTE, type: "storage-buffer" }
             ],
         });
@@ -393,81 +383,18 @@ export default class Renderer {
 
         //
 
-        const simParamData = new Float32Array([
-            0.04,  // deltaT;
-            0.1,   // rule1Distance;
-            0.025, // rule2Distance;
-            0.025, // rule3Distance;
-            0.02,  // rule1Scale;
-            0.05,  // rule2Scale;
-            0.005  // rule3Scale;
-          ]);
-          const simParamBuffer = this.device.createBuffer({
-            size: simParamData.byteLength,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-          });
-          simParamBuffer.setSubData(0, simParamData);
-
-        const initialCellData = new Uint8Array(rez * rez * 4);
-        for (let i = 0; i < rez * rez * 4; ++i) {
-            initialCellData[i] = Math.round(2 * Math.random());
-        }
-
-        const cellBuffers = this.cellBuffers = new Array(2);
-        this.cellBindGroups = new Array(2);
-        for (let i = 0; i < 2; ++i) {
-            cellBuffers[i] = this.device.createBuffer({
-                size: Uint8Array.BYTES_PER_ELEMENT * (rez * rez * 4),
-                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
-            });
-            cellBuffers[i].setSubData(0, initialCellData);
-        }
-
-        for (let i = 0; i < 2; ++i) {
-            this.cellBindGroups[i] = this.device.createBindGroup({
+        this.mainBindGroup = this.device.createBindGroup({
             layout: computeBindGroupLayout,
             bindings: [
                 {
                     binding: 0,
                     resource: {
-                        buffer: this.textureSourceBuffer,
-                        // offset: 0,
-                        // size: this.textureSourceData.byteLength,
+                        buffer: this.resultBuffer
                     },
                 } 
             ]
-            /*
-            bindings: [{
-                    binding: 0,
-                    resource: {
-                        buffer: simParamBuffer,
-                        offset: 0,
-                        size: simParamData.byteLength
-                    },
-                }, {
-                    binding: 1,
-                    resource: {
-                        buffer: cellBuffers[i],
-                        offset: 0,
-                    size: initialCellData.byteLength,
-                    },
-                }, {
-                    binding: 2,
-                    resource: {
-                        buffer: cellBuffers[(i + 1) % 2],
-                        offset: 0,
-                        size: initialCellData.byteLength,
-                    },
-                }, {
-                    binding: 3,
-                    resource: {
-                        buffer: this.textureSourceBuffer,
-                        offset: 0,
-                        size: this.textureSourceData.byteLength,
-                    },
-                }],*/
-            });
-        }
+        });
+    
     }
 
     // Resize swapchain, frame buffer attachments
@@ -507,7 +434,7 @@ export default class Renderer {
     }
 
     // Write commands to send to the GPU
-    encodeCommands() {
+    async encodeCommands() {
         console.log('encodeCommand');
 
         let colorAttachment: GPURenderPassColorAttachmentDescriptor = {
@@ -538,27 +465,104 @@ export default class Renderer {
 
             const passEncoder = commandEncoder.beginComputePass();
             passEncoder.setPipeline(this.computePipeline);
-            passEncoder.setBindGroup(0, this.cellBindGroups[t % 2]);
-            passEncoder.dispatch(rez, rez);
+            passEncoder.setBindGroup(0, this.mainBindGroup);
+            passEncoder.dispatch(rez * rez);
             passEncoder.endPass();
 
             this.queue.submit([ commandEncoder.finish() ]);
         }
 
-        {
+        if (false && t < 1) {
 
             const commandEncoder = this.device.createCommandEncoder(); 
-        
-    
-            // https://github.com/gpuweb/gpuweb/issues/69#issuecomment-413919620
-            // https://docs.microsoft.com/en-us/windows/win32/direct3d12/upload-and-readback-of-texture-data
-            const rowPitch = align(rez * 4, 256); // Align(bitmapWidth * sizeof(DWORD), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
-           
-
-            commandEncoder.copyBufferToBuffer(this.textureSourceBuffer,0, this.textureBuffer, 0, this.textureSourceData.byteLength);
             
+            const rowPitch = this.rowPitch;
+
+            // Get a GPU buffer for reading in an unmapped state.
+            const gpuReadBuffer = this.device.createBuffer({
+                size: this.resultBufferSize,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+            });
+
+            // Encode commands for copying buffer to buffer.
+            commandEncoder.copyBufferToBuffer(
+                this.resultBuffer, // source buffer,
+                0, // source offset
+                gpuReadBuffer, // destination buffer
+                0, // destination offset
+                this.resultBufferSize // size
+            );
+
+            this.queue.submit([ commandEncoder.finish() ]);
+
+            // Read buffer.
+            const arrayBuffer = await gpuReadBuffer.mapReadAsync();
+            console.log(this.resultBufferSize);
+            console.log(new Float32Array(arrayBuffer));
+            
+        }
+        else if (true) { 
+
+            const commandEncoder = this.device.createCommandEncoder(); 
+            
+            const rowPitch = this.rowPitch;
+
+            // Get a GPU buffer for reading in an unmapped state.
+            const gpuReadBuffer = this.device.createBuffer({
+                size: this.resultBufferSize,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+            });
+
+            // Encode commands for copying buffer to buffer.
+            commandEncoder.copyBufferToBuffer(
+                this.resultBuffer, // source buffer,
+                0, // source offset
+                gpuReadBuffer, // destination buffer
+                0, // destination offset
+                this.resultBufferSize // size
+            );
+
+            this.queue.submit([ commandEncoder.finish() ]);
+
+            // Read buffer.
+            const arrayBuffer = await gpuReadBuffer.mapReadAsync();
+            const dataBuffer = new Uint8Array(arrayBuffer);
+            // console.log(this.resultBufferSize);
+            // console.log(dataBuffer);
+
+
+
+
+            const tmpTextureDataBuffer = createBuffer(this.device, dataBuffer,  GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE)
+         
+            
+            
+            const commandEncoder2 = this.device.createCommandEncoder(); 
+        /*
+
+            commandEncoder2.copyBufferToTexture({
+                buffer: tmpTextureDataBuffer,
+                rowPitch, 
+                imageHeight: 0
+            }, {
+                texture: this.outTexture
+            }, {
+                width: rez,
+                height: rez,
+                depth: 1,
+            });
+            */
+            this.queue.submit([ commandEncoder2.finish() ]); 
+            
+
+        } else {
+            const commandEncoder = this.device.createCommandEncoder(); 
+            
+            const rowPitch = this.rowPitch;
+
             commandEncoder.copyBufferToTexture({
-                buffer: this.textureBuffer,
+                // buffer: t % 2 ? this.resultBuffer : this.textureDataBuffer,
+                buffer: this.resultBuffer,
                 rowPitch, 
                 imageHeight: rez
             }, {
@@ -568,10 +572,12 @@ export default class Renderer {
                 height: rez,
                 depth: 1,
             });
-
-            this.queue.submit([ commandEncoder.finish() ]);
             
+            this.queue.submit([ commandEncoder.finish() ]); 
         }
+
+        this.colorTexture = this.swapchain.getCurrentTexture();
+        this.colorTextureView = this.colorTexture.createView();
 
         this.commandEncoder = this.device.createCommandEncoder();
 
