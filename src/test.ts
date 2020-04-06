@@ -82,7 +82,7 @@ export default class Renderer {
 
     constructor(canvas) {
         this.canvas = canvas;
-        rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
+        // rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
         console.log(rez);
     }
 
@@ -272,19 +272,19 @@ export default class Renderer {
         console.log("rez*rez*component", (rez * rez * components));
         console.log("align rez*rez*components", (rowPitch / components) * rez);
 
-        const textureData = new Uint8Array(rowPitch * rez);
+        const textureData = new Float32Array(rowPitch * rez);
 
         for (let i = 0; i < rowPitch * rez * components; i += 1) {
-            textureData[i] = 100;
+            textureData[i] = 0.3;
         }
 
         for (let row = 0; row < rez; row++) {
             for (let col = 0; col < rez; col++) {
                 const idx = row * rowPitch + col * components; // REMEMBER: rowPitch is already multiplied by number of components
-                textureData[idx + 0] = Math.ceil(255.0 * (row / rez));
-                textureData[idx + 1] = 0;
-                textureData[idx + 2] = 255 - Math.ceil(255.0 * (col / rez));
-                textureData[idx + 3] = 255;
+                textureData[idx + 0] = 0.0;//Math.ceil((row / rez));
+                textureData[idx + 1] = 0.0;
+                textureData[idx + 2] = 0.5;// - Math.ceil((col / rez));
+                textureData[idx + 3] = 1.0;
             }
         }
 
@@ -296,16 +296,18 @@ export default class Renderer {
                 height: rez, 
                 depth: 1
             },
-            format: "rgba8unorm",
+            format: "rgba32float",
             usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.SAMPLED,
         });
 
         {
+            const rowPitch = this.rowPitch;
+            console.log(rowPitch);
             const commandEncoder = this.device.createCommandEncoder(); 
         
             commandEncoder.copyBufferToTexture({
                 buffer: this.textureDataBuffer,
-                rowPitch, 
+                rowPitch: rowPitch * Float32Array.BYTES_PER_ELEMENT , 
                 imageHeight: 0
             }, {
                 texture: this.outTexture
@@ -466,7 +468,7 @@ export default class Renderer {
             const passEncoder = commandEncoder.beginComputePass();
             passEncoder.setPipeline(this.computePipeline);
             passEncoder.setBindGroup(0, this.mainBindGroup);
-            passEncoder.dispatch(rez * rez);
+            passEncoder.dispatch(rez,rez);
             passEncoder.endPass();
 
             this.queue.submit([ commandEncoder.finish() ]);
@@ -501,7 +503,7 @@ export default class Renderer {
             console.log(new Float32Array(arrayBuffer));
             
         }
-        else if (true) { 
+        else if (false) { 
 
             const commandEncoder = this.device.createCommandEncoder(); 
             
@@ -524,16 +526,17 @@ export default class Renderer {
 
             this.queue.submit([ commandEncoder.finish() ]);
 
-            // Read buffer.
-            const arrayBuffer = await gpuReadBuffer.mapReadAsync();
-            const dataBuffer = new Uint8Array(arrayBuffer);
-            // console.log(this.resultBufferSize);
-            // console.log(dataBuffer);
+            if (t < 5) {
+                // Read buffer.
+                const arrayBuffer = await gpuReadBuffer.mapReadAsync();
+                const dataBuffer = new Float32Array(arrayBuffer);
+                console.log(dataBuffer);
+                // console.log(this.resultBufferSize);
+            }
 
 
 
-
-            const tmpTextureDataBuffer = createBuffer(this.device, dataBuffer,  GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE)
+            // const tmpTextureDataBuffer = createBuffer(this.device, dataBuffer,  GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE)
          
             
             
@@ -563,7 +566,7 @@ export default class Renderer {
             commandEncoder.copyBufferToTexture({
                 // buffer: t % 2 ? this.resultBuffer : this.textureDataBuffer,
                 buffer: this.resultBuffer,
-                rowPitch, 
+                rowPitch: rowPitch * Float32Array.BYTES_PER_ELEMENT, 
                 imageHeight: rez
             }, {
                 texture: this.outTexture
@@ -572,6 +575,7 @@ export default class Renderer {
                 height: rez,
                 depth: 1,
             });
+            
             
             this.queue.submit([ commandEncoder.finish() ]); 
         }

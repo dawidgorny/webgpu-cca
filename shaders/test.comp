@@ -32,8 +32,8 @@ layout(std140, set = 0, binding = 3) buffer destBuffer {
 */
 // layout(rgba32f, binding = 4) uniform image2D img_output;
 
-layout(std140, set = 0, binding = 0) buffer ResultBuffer {
-    vec4 data[dataLength/4];
+layout(std430, set = 0, binding = 0) buffer ResultBuffer {
+    vec4 data[];
 } resultColorBuffer;
 
 const int states = 200;
@@ -44,7 +44,7 @@ void main() {
 
     
 
-    // ivec2 coords = ivec2(gl_GlobalInvocationID.xy); 
+    ivec2 coords = ivec2(gl_GlobalInvocationID.xy); 
     // uint index = uint(coords.y * cols + coords.x);
     // if (index >= numCells) { return; }
 
@@ -52,16 +52,16 @@ void main() {
     // resultColorBuffer.data[index] = uvec4(255,10,10, 255);
     // resultColorBuffer.data[index] = uvec4(0,255,0, 255);
 
-    uint index = gl_GlobalInvocationID.x;
+    // uint index = gl_GlobalInvocationID.x;
 
-    uint row = uint(floor(index / rows));
-    uint col = index - (row * rows);
-    uint idx = row * rowPitch + col;
+    uint row = coords.y;
+    uint col = coords.x;
+    uint idx = row * rowPitch / 4 + col;
 
     // resultColorBuffer.data[idx][0] = uvec4(255,128,0, 255);
 
     // resultColorBuffer.data[idx] = 255*255*255*255;
-    resultColorBuffer.data[idx] = vec4(10, 128, 128, 255);
+    resultColorBuffer.data[idx] = vec4(0, float(col) / float(cols), float(row) / float(rows), 1.0);
     
     // resultColorBuffer.data[idx * 4 + 0] = 1;
     // resultColorBuffer.data[idx * 4 + 1] = 128;
