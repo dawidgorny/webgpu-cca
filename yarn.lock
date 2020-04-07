@@ -2502,6 +2502,11 @@ serialize-javascript@^2.1.2:
   resolved "https://registry.yarnpkg.com/serialize-javascript/-/serialize-javascript-2.1.2.tgz#ecec53b0e0317bdc95ef76ab7074b7384785fa61"
   integrity sha512-rs9OggEUF0V4jUSecXazOYsLfu7OGK2qIn3c7IPBiffz32XniEp/TX9Xmc9LQfK2nQ2QKHvZ2oygKUGU0lG4jQ==
 
+servor@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/servor/-/servor-3.2.0.tgz#d630025ac69a7da7724bd6e1f02d65f9a56f8cca"
+  integrity sha512-L9wmcl6AMlDN4DOmnjpY2ZoWmC3c6h4dxAug5oNq1uQrV2ZuPc6pKejwsZ23EBo7Sw0nZUZ8zN0qswHc/JZs2g==
+
 set-blocking@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
@@ -2820,6 +2825,11 @@ tty-browserify@0.0.0:
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/tty-browserify/-/tty-browserify-0.0.0.tgz#a157ba402da24e9bf957f9aa69d524eed42901a6"
   integrity sha1-oVe6QC2iTpv5V/mqadUk7tQpAaY=
+
+tweakpane@^1.3.2:
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/tweakpane/-/tweakpane-1.3.2.tgz#e6916d2a47f5458a4703d878c38bebfac5906410"
+  integrity sha512-QiNXGmSWbuKRypKePTTM/x1Ae93INpJ0iXKxH/VF7VB3FXZDJTmBsV+HIqB4IynkkQX5VQCC4bAE0zXZRTLW5g==
 
 typedarray@^0.0.6:
   version "0.0.6"

@@ -1,5 +1,6 @@
 /// <reference path="../node_modules/@webgpu/types/index.d.ts" />
 
+import * as Tweakpane from 'tweakpane'
 import { loadShader, align, createBuffer, range } from './helpers'
 
 // Position Vertex Buffer Data
@@ -97,6 +98,8 @@ export default class Renderer {
     simParamData: Float32Array;
     simParamBuffer: GPUBuffer;
 
+    pane: Tweakpane;
+
     constructor(canvas) {
         this.canvas = canvas;
         this.rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
@@ -116,6 +119,9 @@ export default class Renderer {
             // console.log("up");
             this.mouse = 0;
         });
+
+        this.pane = new Tweakpane();
+        this.pane.addInput(this, 'nstates', { min: 0, max: 50, step: 1 });
     }
 
     // Start the rendering engine
