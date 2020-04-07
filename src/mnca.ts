@@ -13,12 +13,12 @@ const positions = new Float32Array([
 ]);
 
 const uvs = new Float32Array([
-    1.0,  0.0,
-    0.0,  0.0,
-    0.0,  1.0,
-    0.0,  1.0,
     1.0,  1.0,
-    1.0,  0.0
+    0.0,  1.0,
+    0.0,  0.0,
+    0.0,  0.0,
+    1.0,  0.0,
+    1.0,  1.0
 ]);
 
 // Color Vertex Buffer Data
@@ -34,11 +34,22 @@ const colors = new Float32Array([
 // Index Buffer Data
 const indices = new Uint16Array([ 0, 1, 2, 3, 4, 5 ]);
 
-let rez = 900;
-
 let t = 0;
 
 export default class Renderer {
+
+    range: number = 1;
+    treshold: number = 3;
+    seedRadius: number = 5.0;
+    nstates: number = 10;
+    rez: number = 100;
+
+    mousex: number = 0;
+    mousey: number = 0;
+    mouse: number = 0;
+
+    //
+
     canvas: HTMLCanvasElement;
 
     // API Data Structures
@@ -83,10 +94,28 @@ export default class Renderer {
     textureData: Uint8Array;
     textureDataBuffer: GPUBuffer;
 
+    simParamData: Float32Array;
+    simParamBuffer: GPUBuffer;
+    
     constructor(canvas) {
         this.canvas = canvas;
-        // rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
-        console.log(rez);
+        this.rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
+        console.log(this.rez);
+
+        this.canvas.addEventListener("mousemove", (e: MouseEvent) => {
+            // console.log(e.clientX, e.clientY);
+            let rect = this.canvas.getBoundingClientRect();
+            this.mousex = e.clientX - rect.left;
+            this.mousey = e.clientY - rect.top;
+        });
+        this.canvas.addEventListener("mousedown", (e: MouseEvent) => {
+            // console.log("down");
+            this.mouse = 1;
+        });
+        document.body.addEventListener("mouseup", (e: MouseEvent) => {
+            // console.log("up");
+            this.mouse = 0;
+        });
     }
 
     // Start the rendering engine
@@ -267,26 +296,25 @@ export default class Renderer {
         console.log("init texture");
 
         //
-
         const components = 4;
-        const rowPitch = this.rowPitch = align(rez * components, 256);
+        const rowPitch = this.rowPitch = align(this.rez * components, 256);
 
         console.log("rowPitch:", rowPitch);
-        console.log("rez*rez*component", (rez * rez * components));
-        console.log("align rez*rez*components", (rowPitch / components) * rez);
+        console.log("rez*rez*component", (this.rez * this.rez * components));
+        console.log("align rez*rez*components", (rowPitch / components) * this.rez);
 
-        const textureData = new Float32Array(rowPitch * rez);
+        const textureData = new Float32Array(rowPitch * this.rez);
 
-        for (let i = 0; i < rowPitch * rez * components; i += 1) {
+        for (let i = 0; i < rowPitch * this.rez * components; i += 1) {
             textureData[i] = 0.3;
         }
 
-        for (let row = 0; row < rez; row++) {
-            for (let col = 0; col < rez; col++) {
+        for (let row = 0; row < this.rez; row++) {
+            for (let col = 0; col < this.rez; col++) {
                 const idx = row * rowPitch + col * components; // REMEMBER: rowPitch is already multiplied by number of components
-                textureData[idx + 0] = 0.0;//Math.ceil((row / rez));
-                textureData[idx + 1] = 0.0;
-                textureData[idx + 2] = 0.5;// - Math.ceil((col / rez));
+                textureData[idx + 0] = 0.1;
+                textureData[idx + 1] = 0.1;
+                textureData[idx + 2] = 0.1;
                 textureData[idx + 3] = 1.0;
             }
         }
@@ -295,8 +323,8 @@ export default class Renderer {
         console.log("textureData.byteLength: " + textureData.byteLength); 
         this.outTexture = this.device.createTexture({
             size: { 
-                width: rez, 
-                height: rez, 
+                width: this.rez, 
+                height: this.rez, 
                 depth: 1
             },
             format: "rgba32float",
@@ -310,13 +338,13 @@ export default class Renderer {
         
             commandEncoder.copyBufferToTexture({
                 buffer: this.textureDataBuffer,
-                rowPitch: rowPitch * Float32Array.BYTES_PER_ELEMENT , 
+                rowPitch: rowPitch * Float32Array.BYTES_PER_ELEMENT, 
                 imageHeight: 0
             }, {
                 texture: this.outTexture
             }, {
-                width: rez,
-                height: rez,
+                width: this.rez,
+                height: this.rez,
                 depth: 1,
             });
 
@@ -360,22 +388,30 @@ export default class Renderer {
 
         //
 
-        const simParamData = new Float32Array([
-            0.04,  // varx;
-            0.1   // vary;
+        this.simParamData = new Float32Array([
+            0.04,   // range
+            0.1,    // treshold
+            0.0,    // seedRadius
+            0.0,    // nstates
+            this.rez,     // rez
+            this.rowPitch,   // rowPitch
+            this.mousex,
+            this.mousey,
+            this.mouse
           ]);
-        const simParamBuffer = this.device.createBuffer({
-        size: simParamData.byteLength,
+        this.simParamBuffer = this.device.createBuffer({
+        size: this.simParamData.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
-        simParamBuffer.setSubData(0, simParamData);
+        this.simParamBuffer.setSubData(0, this.simParamData);
 
-        const cellsA = new Float32Array(rez * rez);
-        const cellsB = new Float32Array(rez * rez);
+        const cellsA = new Float32Array(this.rez * this.rez);
+        const cellsB = new Float32Array(this.rez * this.rez);
 
-        for (let i = 0; i < rez * rez; i++) {
-            cellsA[i] = Math.random() * 200.0;
-            cellsB[i] = Math.random() * 200.0;
+        for (let i = 0; i < this.rez * this.rez; i++) {
+            const v = 0; // Math.random() * this.nstates; // Random initial state
+            cellsA[i] = v;
+            cellsB[i] = v;
         }
 
         this.cellBufferA = createBuffer(this.device, cellsA,  GPUBufferUsage.STORAGE)
@@ -421,7 +457,7 @@ export default class Renderer {
                     {
                         binding: 0,
                         resource: {
-                            buffer: simParamBuffer
+                            buffer: this.simParamBuffer
                         },
                     },
                     {
@@ -515,7 +551,7 @@ export default class Renderer {
             const passEncoder = commandEncoder.beginComputePass();
             passEncoder.setPipeline(this.computePipeline);
             passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
-            passEncoder.dispatch(rez,rez);
+            passEncoder.dispatch(this.rez, this.rez);
             passEncoder.endPass();
 
             this.queue.submit([ commandEncoder.finish() ]);
@@ -527,15 +563,14 @@ export default class Renderer {
             const rowPitch = this.rowPitch;
 
             commandEncoder.copyBufferToTexture({
-                // buffer: t % 2 ? this.resultBuffer : this.textureDataBuffer,
                 buffer: this.resultBuffer,
                 rowPitch: rowPitch * Float32Array.BYTES_PER_ELEMENT, 
-                imageHeight: rez
+                imageHeight: this.rez
             }, {
                 texture: this.outTexture
             }, {
-                width: rez,
-                height: rez,
+                width: this.rez,
+                height: this.rez,
                 depth: 1,
             });
             
@@ -568,6 +603,17 @@ export default class Renderer {
 
         // Write and submit commands to queue
         this.encodeCommands();
+
+        this.simParamData[0] = this.range;
+        this.simParamData[1] = this.treshold;
+        this.simParamData[2] = this.seedRadius;
+        this.simParamData[3] = this.nstates;
+        this.simParamData[4] = this.rez;
+        this.simParamData[5] = this.rowPitch;
+        this.simParamData[6] = this.mousex;
+        this.simParamData[7] = this.mousey;
+        this.simParamData[8] = this.mouse;
+        this.simParamBuffer.setSubData(0, this.simParamData);
 
         ++t;
 
