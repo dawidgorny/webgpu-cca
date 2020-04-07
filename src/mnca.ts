@@ -1,6 +1,6 @@
 /// <reference path="../node_modules/@webgpu/types/index.d.ts" />
 
-import { loadShader, createTextureFromImage, align, createBuffer, range } from './helpers'
+import { loadShader, align, createBuffer, range } from './helpers'
 
 // Position Vertex Buffer Data
 const positions = new Float32Array([
@@ -96,7 +96,7 @@ export default class Renderer {
 
     simParamData: Float32Array;
     simParamBuffer: GPUBuffer;
-    
+
     constructor(canvas) {
         this.canvas = canvas;
         this.rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
@@ -524,7 +524,6 @@ export default class Renderer {
 
     // Write commands to send to the GPU
     async encodeCommands() {
-        console.log('encodeCommand');
 
         let colorAttachment: GPURenderPassColorAttachmentDescriptor = {
             attachment: this.colorTextureView,
