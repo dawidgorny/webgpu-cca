@@ -1,24 +1,19 @@
 {
     "compilerOptions": {
-      "target": "es5",
-      "lib": [
-        "dom",
-        "es5",
-        "es2015",
-        "es2016",
-        "es2017"
-      ],
-      "module": "commonjs",
-      "declaration": false,
-      "noImplicitAny": false,
-      "suppressImplicitAnyIndexErrors": true,
-      "removeComments": true,
-      "emitDecoratorMetadata": true,
-      "experimentalDecorators": true,
-      "noEmitHelpers": false,
-      "sourceMap": true,
-      "strictNullChecks": false,
-      "jsx": "react",
-      "allowSyntheticDefaultImports": true
+        "module": "es6",
+        "target": "es6",
+        "sourceMap": true,
+        "declaration": true,
+        "declarationMap": true,
+        "experimentalDecorators": true,
+        "importHelpers": true,
+        "noUnusedParameters": true,
+        "noUnusedLocals": true,
+        "preserveConstEnums": true,
+        "moduleResolution": "node",
+        "strict": true,
+        "strictNullChecks": true,
+        "isolatedModules": true,
+        "esModuleInterop": true 
     }
   }

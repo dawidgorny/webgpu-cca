@@ -36,5 +36,8 @@
         "webpack-cli": "^3.3.11",
         "webpack-merge": "^4.2.2"
     },
-    "dependencies": {}
+    "dependencies": {
+        "@thi.ng/rstream": "^4.0.3",
+        "@thi.ng/transducers": "^6.4.4"
+    }
 }
