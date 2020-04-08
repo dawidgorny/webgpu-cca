@@ -39,8 +39,6 @@ let t = 0;
 
 export default class Renderer {
 
-    range: number = 1;
-    treshold: number = 3;
     seedRadius: number = 5.0;
     nstates: number = 10;
     rez: number = 100;
@@ -50,6 +48,8 @@ export default class Renderer {
     mouse: number = 0;
 
     //
+
+    resolution: number = 100;
 
     canvas: HTMLCanvasElement;
 
@@ -91,8 +91,6 @@ export default class Renderer {
     resultBuffer: GPUBuffer;
 
     outTexture: GPUTexture;
-    textureSourceData: Uint8Array;
-    textureData: Uint8Array;
     textureDataBuffer: GPUBuffer;
 
     simParamData: Float32Array;
@@ -102,26 +100,32 @@ export default class Renderer {
 
     constructor(canvas) {
         this.canvas = canvas;
-        this.rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
-        console.log(this.rez);
+        this.resolution = this.rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
 
         this.canvas.addEventListener("mousemove", (e: MouseEvent) => {
-            // console.log(e.clientX, e.clientY);
             let rect = this.canvas.getBoundingClientRect();
             this.mousex = e.clientX - rect.left;
             this.mousey = e.clientY - rect.top;
         });
         this.canvas.addEventListener("mousedown", (e: MouseEvent) => {
-            // console.log("down");
             this.mouse = 1;
         });
         document.body.addEventListener("mouseup", (e: MouseEvent) => {
-            // console.log("up");
             this.mouse = 0;
         });
 
         this.pane = new Tweakpane();
-        this.pane.addInput(this, 'nstates', { min: 0, max: 50, step: 1 });
+        const f1 = this.pane.addFolder({ title: 'Resolution' });
+        f1.addInput(this, 'resolution', { min: 10, max: 2048, step: 1 });
+        f1.addButton({
+            title: 'Apply (reload)',
+          }).on('click', (value) => {
+            window.location.hash = "#" + this.resolution;
+            window.location.reload();
+          });
+        const f2 = this.pane.addFolder({ title: 'Simulation' });
+        f2.addInput(this, 'nstates', { min: 0, max: 50, step: 1 });
+        f2.addInput(this, 'seedRadius', { min: 1, max: 20, step: 0.1 });
     }
 
     // Start the rendering engine
@@ -144,11 +148,9 @@ export default class Renderer {
 
             // Physical Device Adapter
             this.adapter = await entry.requestAdapter();
-            console.log(this.adapter);
 
             // Logical Device
             this.device = await this.adapter.requestDevice();
-            console.log(this.device);
 
             // Queue
             this.queue = this.device.defaultQueue;
@@ -162,18 +164,11 @@ export default class Renderer {
 
     // Initialize resources to render triangle (buffers, shaders, pipeline)
     async initializeResources() {
-        console.log('initializeResources');
         // Buffers
         this.positionBuffer = createBuffer(this.device, positions, GPUBufferUsage.VERTEX);
         this.uvsBuffer = createBuffer(this.device, uvs, GPUBufferUsage.VERTEX);
         this.colorBuffer = createBuffer(this.device, colors, GPUBufferUsage.VERTEX);
         this.indexBuffer = createBuffer(this.device, indices, GPUBufferUsage.INDEX);
-
-        console.log("positions.values.length:" + positions.values.length);
-        console.log("positions.byteLength:" + positions.byteLength);
-
-        console.log("indices.values.length:" + indices.values.length);
-        console.log("indices.byteLength:" + indices.byteLength);
 
         try {
             const vsmDesc: any = { code: await loadShader('/assets/shaders/mnca.vert.spv') };
@@ -299,15 +294,9 @@ export default class Renderer {
         };
         this.pipeline = this.device.createRenderPipeline(pipelineDesc);
 
-        console.log("init texture");
-
         //
         const components = 4;
         const rowPitch = this.rowPitch = align(this.rez * components, 256);
-
-        console.log("rowPitch:", rowPitch);
-        console.log("rez*rez*component", (this.rez * this.rez * components));
-        console.log("align rez*rez*components", (rowPitch / components) * this.rez);
 
         const textureData = new Float32Array(rowPitch * this.rez);
 
@@ -326,7 +315,6 @@ export default class Renderer {
         }
 
         this.textureDataBuffer = createBuffer(this.device, textureData,  GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE)
-        console.log("textureData.byteLength: " + textureData.byteLength); 
         this.outTexture = this.device.createTexture({
             size: { 
                 width: this.rez, 
@@ -338,13 +326,11 @@ export default class Renderer {
         });
 
         {
-            const rowPitch = this.rowPitch;
-            console.log(rowPitch);
             const commandEncoder = this.device.createCommandEncoder(); 
         
             commandEncoder.copyBufferToTexture({
                 buffer: this.textureDataBuffer,
-                rowPitch: rowPitch * Float32Array.BYTES_PER_ELEMENT, 
+                rowPitch: this.rowPitch * Float32Array.BYTES_PER_ELEMENT, 
                 imageHeight: 0
             }, {
                 texture: this.outTexture
@@ -357,23 +343,15 @@ export default class Renderer {
             this.queue.submit([ commandEncoder.finish() ]);
         }
 
-        // this.outTexture = await createTextureFromImage(this.device, 'assets/textures/test.png', GPUTextureUsage.SAMPLED);
-
-
         // Result buffer
-        this.resultBufferSize = textureData.byteLength; //Uint8Array.BYTES_PER_ELEMENT * (rowPitch * rez);
-        // this.resultBufferSize = Float32Array.BYTES_PER_ELEMENT * (rowPitch * rez);
-
+        this.resultBufferSize = textureData.byteLength;
         
-        console.log("this.resultBufferSize: " + this.resultBufferSize);
         this.resultBuffer = this.device.createBuffer({
             size: this.resultBufferSize,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
         });
         
         //
-
-        console.log("init sampler");
 
         const sampler = this.device.createSampler({
             magFilter: "linear",
@@ -395,12 +373,10 @@ export default class Renderer {
         //
 
         this.simParamData = new Float32Array([
-            0.04,   // range
-            0.1,    // treshold
-            0.0,    // seedRadius
-            0.0,    // nstates
-            this.rez,     // rez
-            this.rowPitch,   // rowPitch
+            this.seedRadius, 
+            this.nstates,
+            this.rez, 
+            this.rowPitch, 
             this.mousex,
             this.mousey,
             this.mouse
@@ -487,14 +463,10 @@ export default class Renderer {
                 ]
             })
            );
-
-           console.log(this.mainBindGroup)
-    
     }
 
     // Resize swapchain, frame buffer attachments
     resizeBackings() {
-        console.log('resizeBackings');
         // Swapchain
         if (!this.swapchain) {
             const context: GPUCanvasContext = this.canvas.getContext('gpupresent') as any;
@@ -601,7 +573,6 @@ export default class Renderer {
     }
 
     render = () => {
-        // console.log('render', t);
         // Acquire next image from swapchain
         this.colorTexture = this.swapchain.getCurrentTexture();
         this.colorTextureView = this.colorTexture.createView();
@@ -609,15 +580,13 @@ export default class Renderer {
         // Write and submit commands to queue
         this.encodeCommands();
 
-        this.simParamData[0] = this.range;
-        this.simParamData[1] = this.treshold;
-        this.simParamData[2] = this.seedRadius;
-        this.simParamData[3] = this.nstates;
-        this.simParamData[4] = this.rez;
-        this.simParamData[5] = this.rowPitch;
-        this.simParamData[6] = this.mousex;
-        this.simParamData[7] = this.mousey;
-        this.simParamData[8] = this.mouse;
+        this.simParamData[0] = this.seedRadius;
+        this.simParamData[1] = this.nstates;
+        this.simParamData[2] = this.rez;
+        this.simParamData[3] = this.rowPitch;
+        this.simParamData[4] = this.mousex;
+        this.simParamData[5] = this.mousey;
+        this.simParamData[6] = this.mouse;
         this.simParamBuffer.setSubData(0, this.simParamData);
 
         ++t;
