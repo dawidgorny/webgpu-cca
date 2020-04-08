@@ -39,7 +39,12 @@ yarn install
 npm start
 ```
 
-## Background
+## References
+
+ - [Softology - Multiple Neighborhoods Cellular Automata](https://softologyblog.wordpress.com/2018/03/09/multiple-neighborhoods-cellular-automata/)
+ - [SyntheticSearchSpace /
+WebGL-Automata](https://github.com/SyntheticSearchSpace/WebGL-Automata/tree/master/WebGL-Automata/glsl)
+ - [@psychobiotik - Intro to Compute Shaders](https://paprika.studio/workshops/compute/index.html)
 
 ## License
 
