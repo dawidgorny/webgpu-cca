@@ -6,9 +6,7 @@ Experiment implementtation of Multiple Neighborhoods Cellular Automata using Web
 
 ![preview2](preview2.gif)
 
-[Live demo](https://dawidgorny.github.io/webgpu-cca/)
-
-## Build and run
+## Run
 
 ### Chrome Canary
 
@@ -17,6 +15,10 @@ This code is using WebGPU API, and was tested on Chrome Canary, since it is prov
 Install Chrome Canary.
 
 Turn on `#enable-unsafe-webgpu` via `chrome://flags` on Chrome Canary.
+
+[Live demo](https://dawidgorny.github.io/webgpu-cca/)
+
+## Build
 
 ### glslang
 
@@ -30,7 +32,6 @@ or download a release package from here:
 [https://github.com/KhronosGroup/glslang](https://github.com/KhronosGroup/glslang)
 
 
-
 ### Build
 
 ```
@@ -38,7 +39,7 @@ yarn install
 ```
 
 ```
-npm start
+npm run start-dev
 ```
 
 ## References
