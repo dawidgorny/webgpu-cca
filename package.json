@@ -8,7 +8,8 @@
         "dev": "http-server",
         "build": "webpack --config webpack.prod.js && npm run compile-shaders",
         "build-dev": "webpack --config webpack.dev.js && npm run compile-shaders",
-        "compile-shaders": "node scripts/compile-shaders.js"
+        "compile-shaders": "node scripts/compile-shaders.js",
+        "clean": "rm -rf dist/ && rm -rf assets/shaders/*.spv"
     },
     "repository": {
         "type": "git",
