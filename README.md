@@ -6,6 +6,8 @@ Experiment implementtation of Multiple Neighborhoods Cellular Automata using Web
 
 ![preview2](preview2.gif)
 
+[Live demo](https://dawidgorny.github.io/webgpu-cca/)
+
 ## Build and run
 
 ### Chrome Canary
