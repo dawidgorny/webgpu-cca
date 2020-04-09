@@ -37,6 +37,10 @@ const indices = new Uint16Array([ 0, 1, 2, 3, 4, 5 ]);
 
 let t = 0;
 
+let t0 = performance.now();
+let tp = performance.now();
+let td = 0;
+
 export default class Renderer {
 
     seedRadius: number = 5.0;
@@ -98,7 +102,10 @@ export default class Renderer {
 
     pane: Tweakpane;
 
+    fpsDom: HTMLElement;
+
     constructor(canvas) {
+        this.fpsDom = document.getElementById("fps");
         this.canvas = canvas;
         this.resolution = this.rez = Math.round(Math.max(this.canvas.width, this.canvas.height));
 
@@ -462,7 +469,7 @@ export default class Renderer {
                     } 
                 ]
             })
-           );
+        );
     }
 
     // Resize swapchain, frame buffer attachments
@@ -497,12 +504,10 @@ export default class Renderer {
 
         this.depthTexture = this.device.createTexture(depthTextureDesc);
         this.depthTextureView = this.depthTexture.createView();
-
     }
 
     // Write commands to send to the GPU
     async encodeCommands() {
-
         let colorAttachment: GPURenderPassColorAttachmentDescriptor = {
             attachment: this.colorTextureView,
             loadValue: { r: 0, g: 0, b: 0, a: 1 },
@@ -521,43 +526,29 @@ export default class Renderer {
             colorAttachments: [ colorAttachment ],
             depthStencilAttachment: depthAttachment
         };
+        
+        const commandEncoder = this.device.createCommandEncoder(); 
 
-        {
-            const commandEncoder = this.device.createCommandEncoder();
-
-            const passEncoder = commandEncoder.beginComputePass();
-            passEncoder.setPipeline(this.computePipeline);
-            passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
-            passEncoder.dispatch(this.rez, this.rez);
-            passEncoder.endPass();
-
-            this.queue.submit([ commandEncoder.finish() ]);
-        }
-
-        {
-            const commandEncoder = this.device.createCommandEncoder(); 
-            
-            const rowPitch = this.rowPitch;
-
-            commandEncoder.copyBufferToTexture({
-                buffer: this.resultBuffer,
-                rowPitch: rowPitch * Float32Array.BYTES_PER_ELEMENT, 
-                imageHeight: this.rez
-            }, {
-                texture: this.outTexture
-            }, {
-                width: this.rez,
-                height: this.rez,
-                depth: 1,
-            });
-            
-            this.queue.submit([ commandEncoder.finish() ]); 
-        }
-
-        this.commandEncoder = this.device.createCommandEncoder();
+        const passEncoder = commandEncoder.beginComputePass();
+        passEncoder.setPipeline(this.computePipeline);
+        passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
+        passEncoder.dispatch(this.rez, this.rez);
+        passEncoder.endPass();
+        
+        commandEncoder.copyBufferToTexture({
+            buffer: this.resultBuffer,
+            rowPitch: this.rowPitch * Float32Array.BYTES_PER_ELEMENT, 
+            imageHeight: this.rez
+        }, {
+            texture: this.outTexture
+        }, {
+            width: this.rez,
+            height: this.rez,
+            depth: 1,
+        });
 
         // Encode drawing commands
-        this.passEncoder = this.commandEncoder.beginRenderPass(renderPassDesc);
+        this.passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
         this.passEncoder.setPipeline(this.pipeline);
         this.passEncoder.setBindGroup(0, this.uniformBindGroup);
         this.passEncoder.setViewport(0, 0, this.canvas.width, this.canvas.height, 0, 1);
@@ -569,10 +560,20 @@ export default class Renderer {
         this.passEncoder.drawIndexed(6, 1, 0, 0, 0);
         this.passEncoder.endPass();
 
-        this.queue.submit([ this.commandEncoder.finish() ]);
+        this.queue.submit([ commandEncoder.finish() ]);
     }
 
     render = () => {
+        // Benchmark
+        let t1 = performance.now();
+        td = (td + (t1 - t0)) / 2.0;
+        if (t1 - tp > 1000.0) {
+            tp = t1;
+            td = (t1 - t0);
+            this.fpsDom.innerText = (1000.0 / td).toFixed(2) + " fps (avg)";
+        }
+        t0 = t1;
+
         // Acquire next image from swapchain
         this.colorTexture = this.swapchain.getCurrentTexture();
         this.colorTextureView = this.colorTexture.createView();
