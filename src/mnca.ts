@@ -307,7 +307,7 @@ export default class Renderer {
 
         const textureData = new Float32Array(rowPitch * this.rez);
 
-        for (let i = 0; i < rowPitch * this.rez * components; i += 1) {
+        for (let i = 0; i < rowPitch * this.rez; i += 1) {
             textureData[i] = 0.3;
         }
 
