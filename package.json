@@ -1,7 +1,7 @@
 {
     "name": "webgpu-cca",
     "version": "0.1.0",
-    "description": "Experiment implementtation of Multiple Neighborhoods Cellular Automata using WebGPU",
+    "description": "Experiment implementation of Multiple Neighborhoods Cellular Automata using WebGPU",
     "main": "dist/main.js",
     "scripts": {
         "start": "npm run build && npm run dev",
