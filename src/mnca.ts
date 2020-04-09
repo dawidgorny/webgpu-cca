@@ -178,14 +178,14 @@ export default class Renderer {
         this.indexBuffer = createBuffer(this.device, indices, GPUBufferUsage.INDEX);
 
         try {
-            const vsmDesc: any = { code: await loadShader('/assets/shaders/mnca.vert.spv') };
+            const vsmDesc: any = { code: await loadShader('assets/shaders/mnca.vert.spv') };
             this.vertModule = this.device.createShaderModule(vsmDesc);
         } catch (e) {
             console.error(e);
         }
         
         try {
-            const fsmDesc: any = { code: await loadShader('/assets/shaders/mnca.frag.spv') };
+            const fsmDesc: any = { code: await loadShader('assets/shaders/mnca.frag.spv') };
             this.fragModule = this.device.createShaderModule(fsmDesc);
         } catch (e) {
             console.error(e);
@@ -410,7 +410,7 @@ export default class Renderer {
         
         try {
             const csmDesc: any = { 
-                code: await loadShader('/assets/shaders/mnca.comp.spv') 
+                code: await loadShader('assets/shaders/mnca.comp.spv') 
             };
             this.compModule = this.device.createShaderModule(csmDesc);
         } catch (e) {
