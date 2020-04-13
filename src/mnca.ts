@@ -239,7 +239,7 @@ export default class Renderer {
         };
 
         const bindGroupLayout = this.device.createBindGroupLayout({
-            bindings: [{
+            entries: [{
                 // Sampler
                 binding: 0,
                 visibility: GPUShaderStage.FRAGMENT,
@@ -337,8 +337,8 @@ export default class Renderer {
         
             commandEncoder.copyBufferToTexture({
                 buffer: this.textureDataBuffer,
-                rowPitch: this.rowPitch * Float32Array.BYTES_PER_ELEMENT, 
-                imageHeight: 0
+                bytesPerRow: this.rowPitch * Float32Array.BYTES_PER_ELEMENT, 
+                rowsPerImage: this.row
             }, {
                 texture: this.outTexture
             }, {
@@ -367,7 +367,7 @@ export default class Renderer {
 
         this.uniformBindGroup = this.device.createBindGroup({
             layout: bindGroupLayout,
-            bindings: [{
+            entries: [{
                 binding: 0,
                 resource: sampler,
             }, {
@@ -418,7 +418,7 @@ export default class Renderer {
         }
 
         const computeBindGroupLayout = this.device.createBindGroupLayout({
-            bindings: [
+            entries: [
                 { binding: 0, visibility: GPUShaderStage.COMPUTE, type: "uniform-buffer" },
                 { binding: 1, visibility: GPUShaderStage.COMPUTE, type: "storage-buffer" },
                 { binding: 2, visibility: GPUShaderStage.COMPUTE, type: "storage-buffer" },
@@ -442,7 +442,7 @@ export default class Renderer {
 
         this.mainBindGroup = range(0,2).map((val, idx) => this.device.createBindGroup({
                 layout: computeBindGroupLayout,
-                bindings: [
+                entries: [
                     {
                         binding: 0,
                         resource: {
@@ -494,7 +494,6 @@ export default class Renderer {
 
         const depthTextureDesc: GPUTextureDescriptor = {
             size: depthSize,
-            arrayLayerCount: 1,
             mipLevelCount: 1,
             sampleCount: 1,
             dimension: '2d',
@@ -537,8 +536,8 @@ export default class Renderer {
         
         commandEncoder.copyBufferToTexture({
             buffer: this.resultBuffer,
-            rowPitch: this.rowPitch * Float32Array.BYTES_PER_ELEMENT, 
-            imageHeight: this.rez
+            bytesPerRow: this.rowPitch * Float32Array.BYTES_PER_ELEMENT, 
+            rowsPerImage: this.rez
         }, {
             texture: this.outTexture
         }, {
