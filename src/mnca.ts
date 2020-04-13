@@ -1,4 +1,4 @@
-/// <reference path="../node_modules/@webgpu/types/index.d.ts" />
+/// <reference path="../node_modules/@webgpu/types/dist/index.d.ts" />
 
 import * as Tweakpane from 'tweakpane'
 import { loadShader, align, createBuffer, range } from './helpers'
