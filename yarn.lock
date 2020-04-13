@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@types/node@^13.1.0":
+"@types/node@^13.11.1":
   version "13.11.1"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.11.1.tgz#49a2a83df9d26daacead30d0ccc8762b128d53c7"
   integrity sha512-eWQGP3qtxwL8FGneRrC5DwrJLGN4/dH1clNTuLfN81HCrxVtxRjygDTUoZJ5ASlDEeo0ppYFQjQIlXhtXpOn6g==
@@ -152,10 +152,10 @@
     "@webassemblyjs/wast-parser" "1.9.0"
     "@xtuc/long" "4.2.2"
 
-"@webgpu/types@0.0.19":
-  version "0.0.19"
-  resolved "https://registry.yarnpkg.com/@webgpu/types/-/types-0.0.19.tgz#51b7bbbd0d535712ac294ed629ac40188ed90a39"
-  integrity sha512-G3ISy6fSsQHg+BvKJJZJw1UaMPuRwJ5BoQfwqBMW09IDRAiy8Bk7FpMDTPb2AJOVR9MCeU0QmDjym3OXj+QEbQ==
+"@webgpu/types@^0.0.23":
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/@webgpu/types/-/types-0.0.23.tgz#089792ca967d60d89a277749b47e5a03afbff0f8"
+  integrity sha512-Nv+OuFIzxqpv41KbwcT24KZ+RfuLRas4oFXMufS7HiQGqYgXQ+wCNCVqXlbtH799s+JL501Q7t0uVJXg/tsS6A==
 
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"
