@@ -92,13 +92,13 @@ export async function createTextureFromImage(device: GPUDevice, src: string, usa
 }
 
 export function createBuffer (device: GPUDevice, arr: Float32Array | Uint16Array | Uint8Array, usage: number) {
-    let desc = { size: arr.byteLength, usage };
-    let [ buffer, bufferMapped ] = device.createBufferMapped(desc);
+    let desc = { size: arr.byteLength, usage, mappedAtCreation: true };
+    let buffer = device.createBuffer(desc);
     ``;
     let writeArray =
-        arr instanceof Uint16Array ? new Uint16Array(bufferMapped) : 
-            arr instanceof Uint8Array ? new Uint8Array(bufferMapped) : 
-                new Float32Array(bufferMapped);
+        arr instanceof Uint16Array ? new Uint16Array(buffer.getMappedRange()) : 
+            arr instanceof Uint8Array ? new Uint8Array(buffer.getMappedRange()) : 
+                new Float32Array(buffer.getMappedRange());
     writeArray.set(arr);
     buffer.unmap();
     return buffer;

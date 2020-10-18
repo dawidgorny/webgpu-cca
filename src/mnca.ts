@@ -227,7 +227,6 @@ export default class Renderer {
         };
 
         const vertexState: GPUVertexStateDescriptor = {
-            indexFormat: 'uint16',
             vertexBuffers: [ positionBufferDesc, uvsBufferDesc, colorBufferDesc ]
         };
 
@@ -389,10 +388,12 @@ export default class Renderer {
             this.mouse
           ]);
         this.simParamBuffer = this.device.createBuffer({
-        size: this.simParamData.byteLength,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            size: this.simParamData.byteLength,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true
         });
-        this.simParamBuffer.setSubData(0, this.simParamData);
+        new Float32Array(this.simParamBuffer.getMappedRange()).set(this.simParamData);
+        this.simParamBuffer.unmap();
 
         const cellsA = new Float32Array(this.rez * this.rez);
         const cellsB = new Float32Array(this.rez * this.rez);
@@ -555,14 +556,14 @@ export default class Renderer {
         this.passEncoder.setVertexBuffer(0, this.positionBuffer);
         this.passEncoder.setVertexBuffer(1, this.uvsBuffer);
         this.passEncoder.setVertexBuffer(2, this.colorBuffer);
-        this.passEncoder.setIndexBuffer(this.indexBuffer);
+        this.passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
         this.passEncoder.drawIndexed(6, 1, 0, 0, 0);
         this.passEncoder.endPass();
 
         this.queue.submit([ commandEncoder.finish() ]);
     }
 
-    render = () => {
+    render = async () => {
         // Benchmark
         let t1 = performance.now();
         td = (td + (t1 - t0)) / 2.0;
@@ -587,7 +588,18 @@ export default class Renderer {
         this.simParamData[4] = this.mousex;
         this.simParamData[5] = this.mousey;
         this.simParamData[6] = this.mouse;
-        this.simParamBuffer.setSubData(0, this.simParamData);
+
+        let upload = this.device.createBuffer({
+            size: this.simParamData.byteLength,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true
+        });
+        new Float32Array(upload.getMappedRange()).set(this.simParamData);
+        upload.unmap();
+
+        let commandEncoder = this.device.createCommandEncoder();
+        commandEncoder.copyBufferToBuffer(upload, 0, this.simParamBuffer, 0, this.simParamData.byteLength);
+        this.device.defaultQueue.submit([commandEncoder.finish()]);
 
         ++t;
 
