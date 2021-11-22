@@ -16,7 +16,7 @@ Install Chrome Canary.
 
 Turn on `#enable-unsafe-webgpu` via `chrome://flags` on Chrome Canary.
 
-[Live demo](https://dawidgorny.github.io/webgpu-cca/)
+[Live demo](https://dawidgorny.github.io/webgpu-cca/dist/)
 
 ## Build
 
