@@ -1,18 +1,19 @@
 {
     "compilerOptions": {
-        "module": "es6",
-        "target": "es5",
+        "outDir": "dist/",
+        "target": "es6",
+        "jsx": "react",
+        "skipLibCheck": true,
+        "moduleResolution": "node",
         "declaration": true,
         "declarationMap": true,
         "experimentalDecorators": true,
         "importHelpers": true,
-        "noUnusedParameters": true,
-        "noUnusedLocals": true,
-        "preserveConstEnums": true,
-        "moduleResolution": "node",
-        "strict": true,
-        "strictNullChecks": true,
-        "isolatedModules": true,
-        "esModuleInterop": true 
-    }
-  }
+        "preserveConstEnums": true
+      },
+  "include": [
+    "definitions.d.ts",
+    "src/**/*",
+    "node_modules/@webgpu/types/**/*"
+  ],
+}
