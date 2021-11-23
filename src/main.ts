@@ -24,6 +24,14 @@ f1.addButton({
 const f2 = pane.addFolder({ title: "Simulation" });
 f2.addInput(renderer, "nstates", { min: 0, max: 50, step: 1 });
 f2.addInput(renderer, "seedRadius", { min: 1, max: 20, step: 0.1 });
+const pauseBtn = f2
+    .addButton({
+        title: "Pause",
+    })
+    .on("click", (value) => {
+        renderer.isPaused = !renderer.isPaused;
+        pauseBtn.title = renderer.isPaused ? "Play" : "Pause";
+    });
 
 function resize() {
     if (

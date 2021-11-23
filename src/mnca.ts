@@ -56,6 +56,8 @@ let td = 0;
 //
 
 class Renderer {
+    isPaused: boolean = false;
+
     seedRadius: number = 5.0;
     nstates: number = 10;
     rez: number = 100;
@@ -574,11 +576,13 @@ class Renderer {
 
         const commandEncoder = this.device.createCommandEncoder();
 
-        const passEncoder = commandEncoder.beginComputePass();
-        passEncoder.setPipeline(this.computePipeline);
-        passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
-        passEncoder.dispatch(this.rez, this.rez);
-        passEncoder.endPass();
+        if (!this.isPaused) {
+            const passEncoder = commandEncoder.beginComputePass();
+            passEncoder.setPipeline(this.computePipeline);
+            passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
+            passEncoder.dispatch(this.rez, this.rez);
+            passEncoder.endPass();
+        }
 
         // 🖌️ Encode drawing commands
         this.passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
@@ -624,6 +628,7 @@ class Renderer {
         this.colorTextureView = this.colorTexture.createView();
 
         // 📦 Write and submit commands to queue
+
         this.encodeCommands();
 
         this.simParamData[0] = this.seedRadius;
