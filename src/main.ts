@@ -4,7 +4,7 @@ import { Pane } from "tweakpane";
 import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
 
 let size: number = parseInt(window.location.hash.substr(1));
-size = size > 9 ? size : 256;
+size = size > 9 ? size : 128;
 
 const canvas = document.getElementById("gfx") as HTMLCanvasElement;
 canvas.width = canvas.height = size;
@@ -22,8 +22,18 @@ f1.addButton({
     window.location.reload();
 });
 const f2 = pane.addFolder({ title: "Simulation" });
-f2.addInput(renderer, "nstates", { min: 0, max: 50, step: 1 });
-f2.addInput(renderer, "seedRadius", { min: 1, max: 20, step: 0.1 });
+f2.addInput(renderer, "nstates", { min: 0, max: 50, step: 1 }).on(
+    "change",
+    () => {
+        renderer.paramsNeedUpdate = true;
+    }
+);
+f2.addInput(renderer, "seedRadius", { min: 1, max: 20, step: 0.1 }).on(
+    "change",
+    () => {
+        renderer.paramsNeedUpdate = true;
+    }
+);
 const pauseBtn = f2
     .addButton({
         title: "Pause",

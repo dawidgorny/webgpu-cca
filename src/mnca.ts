@@ -68,6 +68,8 @@ class Renderer {
 
     resolution: number = 100;
 
+    paramsNeedUpdate: boolean = false;
+
     //
 
     fpsDom: HTMLElement;
@@ -130,12 +132,17 @@ class Renderer {
             let rect = this.canvas.getBoundingClientRect();
             this.mousex = ((e.clientX - rect.left) / rect.width) * this.rez;
             this.mousey = ((e.clientY - rect.top) / rect.height) * this.rez;
+            if (this.mouse) {
+                this.paramsNeedUpdate = true;
+            }
         });
         this.canvas.addEventListener("mousedown", (e: MouseEvent) => {
             this.mouse = 1;
+            this.paramsNeedUpdate = true;
         });
         document.body.addEventListener("mouseup", (e: MouseEvent) => {
             this.mouse = 0;
+            this.paramsNeedUpdate = true;
         });
     }
 
@@ -339,7 +346,7 @@ class Renderer {
         this.textureDataBuffer = createBuffer(
             this.device,
             textureData,
-            GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
+            GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE
         );
         this.outTexture = this.device.createTexture({
             size: {
@@ -623,45 +630,33 @@ class Renderer {
         }
         t0 = t1;
 
-        // ⏭ Acquire next image from context
+        // Acquire next image from context
         this.colorTexture = this.context.getCurrentTexture();
         this.colorTextureView = this.colorTexture.createView();
 
-        // 📦 Write and submit commands to queue
+        // Write and submit commands to queue
 
         this.encodeCommands();
 
-        this.simParamData[0] = this.seedRadius;
-        this.simParamData[1] = this.nstates;
-        this.simParamData[2] = this.rez;
-        this.simParamData[3] = this.rowPitch;
-        this.simParamData[4] = this.mousex;
-        this.simParamData[5] = this.mousey;
-        this.simParamData[6] = this.mouse;
+        if (this.paramsNeedUpdate) {
+            this.paramsNeedUpdate = false;
 
-        let upload = this.device.createBuffer({
-            size: this.simParamData.byteLength,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC,
-            mappedAtCreation: true,
-        });
-        new Float32Array(upload.getMappedRange()).set(this.simParamData);
-        upload.unmap();
+            this.simParamData[0] = this.seedRadius;
+            this.simParamData[1] = this.nstates;
+            this.simParamData[2] = this.rez;
+            this.simParamData[3] = this.rowPitch;
+            this.simParamData[4] = this.mousex;
+            this.simParamData[5] = this.mousey;
+            this.simParamData[6] = this.mouse;
 
-        let commandEncoder = this.device.createCommandEncoder();
-        commandEncoder.copyBufferToBuffer(
-            upload,
-            0,
-            this.simParamBuffer,
-            0,
-            this.simParamData.byteLength
-        );
-        this.queue.submit([commandEncoder.finish()]);
+            this.queue.writeBuffer(this.simParamBuffer, 0, this.simParamData);
+        }
 
         //
 
         ++t;
 
-        // ➿ Refresh canvas
+        // Refresh canvas
         requestAnimationFrame(this.render);
     };
 }
