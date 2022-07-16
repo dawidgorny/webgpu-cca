@@ -56,6 +56,11 @@ let td = 0;
 //
 
 class Renderer {
+    paramsNeedUpdate: boolean = false;
+    isPaused: boolean = false;
+
+    //
+
     seedRadius: number = 5.0;
     nstates: number = 10;
     rez: number = 100;
@@ -128,12 +133,17 @@ class Renderer {
             let rect = this.canvas.getBoundingClientRect();
             this.mousex = ((e.clientX - rect.left) / rect.width) * this.rez;
             this.mousey = ((e.clientY - rect.top) / rect.height) * this.rez;
+            if (this.mouse) {
+                this.paramsNeedUpdate = true;
+            }
         });
         this.canvas.addEventListener("mousedown", (e: MouseEvent) => {
             this.mouse = 1;
+            this.paramsNeedUpdate = true;
         });
         document.body.addEventListener("mouseup", (e: MouseEvent) => {
             this.mouse = 0;
+            this.paramsNeedUpdate = true;
         });
     }
 
@@ -576,11 +586,13 @@ class Renderer {
 
         const commandEncoder = this.device.createCommandEncoder();
 
-        const passEncoder = commandEncoder.beginComputePass();
-        passEncoder.setPipeline(this.computePipeline);
-        passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
-        passEncoder.dispatchWorkgroups(this.rez, this.rez);
-        passEncoder.end();
+        if (!this.isPaused) {
+            const passEncoder = commandEncoder.beginComputePass();
+            passEncoder.setPipeline(this.computePipeline);
+            passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
+            passEncoder.dispatchWorkgroups(this.rez, this.rez);
+            passEncoder.end();
+        }
 
         // Encode drawing commands
         this.passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
@@ -628,32 +640,35 @@ class Renderer {
         // Write and submit commands to queue
         this.encodeCommands();
 
-        this.simParamData[0] = this.seedRadius;
-        this.simParamData[1] = this.nstates;
-        this.simParamData[2] = this.rez;
-        this.simParamData[3] = this.rowPitch;
-        this.simParamData[4] = this.mousex;
-        this.simParamData[5] = this.mousey;
-        this.simParamData[6] = this.mouse;
+        if (this.paramsNeedUpdate) {
+            this.paramsNeedUpdate = false;
 
-        let upload = this.device.createBuffer({
-            size: this.simParamData.byteLength,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC,
-            mappedAtCreation: true,
-        });
-        new Float32Array(upload.getMappedRange()).set(this.simParamData);
-        upload.unmap();
+            this.simParamData[0] = this.seedRadius;
+            this.simParamData[1] = this.nstates;
+            this.simParamData[2] = this.rez;
+            this.simParamData[3] = this.rowPitch;
+            this.simParamData[4] = this.mousex;
+            this.simParamData[5] = this.mousey;
+            this.simParamData[6] = this.mouse;
 
-        let commandEncoder = this.device.createCommandEncoder();
-        commandEncoder.copyBufferToBuffer(
-            upload,
-            0,
-            this.simParamBuffer,
-            0,
-            this.simParamData.byteLength
-        );
-        this.queue.submit([commandEncoder.finish()]);
+            let upload = this.device.createBuffer({
+                size: this.simParamData.byteLength,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC,
+                mappedAtCreation: true,
+            });
+            new Float32Array(upload.getMappedRange()).set(this.simParamData);
+            upload.unmap();
 
+            let commandEncoder = this.device.createCommandEncoder();
+            commandEncoder.copyBufferToBuffer(
+                upload,
+                0,
+                this.simParamBuffer,
+                0,
+                this.simParamData.byteLength
+            );
+            this.queue.submit([commandEncoder.finish()]);
+        }
         //
 
         ++t;
