@@ -1,6 +1,6 @@
 # WebGPU Compute Cellular Automata
 
-Experiment implementtation of Multiple Neighborhoods Cellular Automata using WebGPU
+Implementation of Multiple Neighborhoods Cellular Automata using WebGPU
 
 ![preview](preview.png)
 
@@ -10,7 +10,7 @@ Experiment implementtation of Multiple Neighborhoods Cellular Automata using Web
 
 ### Chrome Canary
 
-This code is using WebGPU API, and was tested on Chrome Canary 98.0.4722.0 macOS.
+This code is using WebGPU API, and was tested on Chrome Canary 105.0.5181.0 macOS.
 
 Install Chrome Canary.
 
@@ -18,14 +18,14 @@ Turn on `#enable-unsafe-webgpu` via `chrome://flags` on Chrome Canary.
 
 [Live demo](https://dawidgorny.github.io/webgpu-cca/dist/)
 
-## Build
+## Build and run
 
 ```
 yarn install
 ```
 
 ```
-npm run start-dev
+npm run dev
 ```
 
 ## References
