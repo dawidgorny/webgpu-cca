@@ -3,25 +3,25 @@ import compShaderCode from "./mnca.comp.wgsl?raw";
 
 const vertShaderCode = `
 struct VSOut {
-    [[builtin(position)]] Position: vec4<f32>;
-    [[location(0)]] texCoord: vec2<f32>;
+    @builtin(position) Position: vec4<f32>,
+    @location(0) texCoord: vec2<f32>
 };
 
-[[stage(vertex)]]
-fn main([[location(0)]] inPos: vec3<f32>,
-        [[location(1)]] inColor: vec3<f32>, 
-        [[location(2)]] inUV: vec2<f32>) -> VSOut {
+@vertex
+fn main(@location(0) inPos: vec3<f32>,
+        @location(1) inColor: vec3<f32>, 
+        @location(2) inUV: vec2<f32>) -> VSOut {
     var vsOut: VSOut;
     vsOut.Position = vec4<f32>(inPos, 1.0);
     vsOut.texCoord = inUV;
     return vsOut;
 }`;
 const fragShaderCode = `
-[[group(0), binding(0)]] var mainSampler: sampler;
-[[group(0), binding(1)]] var mainTexture: texture_2d<f32>;
+@group(0) @binding(0) var mainSampler: sampler;
+@group(0) @binding(1) var mainTexture: texture_2d<f32>;
 
-[[stage(fragment)]]
-fn main([[location(0)]] texCoord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+@fragment
+fn main(@location(0) texCoord: vec2<f32>) -> @location(0) vec4<f32> {
     // return vec4<f32>(1.0, 0.0, 0.0, 1.0);
     return textureSample(mainTexture, mainSampler, texCoord);
 }`;
@@ -56,8 +56,6 @@ let td = 0;
 //
 
 class Renderer {
-    isPaused: boolean = false;
-
     seedRadius: number = 5.0;
     nstates: number = 10;
     rez: number = 100;
@@ -68,29 +66,27 @@ class Renderer {
 
     resolution: number = 100;
 
-    paramsNeedUpdate: boolean = false;
-
     //
 
     fpsDom: HTMLElement;
 
     canvas: HTMLCanvasElement;
 
-    // ⚙️ API Data Structures
+    // API Data Structures
     adapter: GPUAdapter;
     device: GPUDevice;
     queue: GPUQueue;
 
     presentationFormat: GPUTextureFormat;
 
-    // 🎞️ Frame Backings
+    // Frame Backings
     context: GPUCanvasContext;
     colorTexture: GPUTexture;
     colorTextureView: GPUTextureView;
     depthTexture: GPUTexture;
     depthTextureView: GPUTextureView;
 
-    // 🔺 Resources
+    // Resources
     positionBuffer: GPUBuffer;
     uvsBuffer: GPUBuffer;
     colorBuffer: GPUBuffer;
@@ -132,21 +128,16 @@ class Renderer {
             let rect = this.canvas.getBoundingClientRect();
             this.mousex = ((e.clientX - rect.left) / rect.width) * this.rez;
             this.mousey = ((e.clientY - rect.top) / rect.height) * this.rez;
-            if (this.mouse) {
-                this.paramsNeedUpdate = true;
-            }
         });
         this.canvas.addEventListener("mousedown", (e: MouseEvent) => {
             this.mouse = 1;
-            this.paramsNeedUpdate = true;
         });
         document.body.addEventListener("mouseup", (e: MouseEvent) => {
             this.mouse = 0;
-            this.paramsNeedUpdate = true;
         });
     }
 
-    // 🏎️ Start the rendering engine
+    // Start the rendering engine
     async start() {
         if (await this.initializeAPI()) {
             this.resizeBackings();
@@ -155,7 +146,7 @@ class Renderer {
         }
     }
 
-    // 🌟 Initialize WebGPU
+    // Initialize WebGPU
     async initializeAPI(): Promise<boolean> {
         try {
             // 🏭 Entry to WebGPU
@@ -180,9 +171,9 @@ class Renderer {
         return true;
     }
 
-    // 🍱 Initialize resources to render triangle (buffers, shaders, pipeline)
+    // Initialize resources to render triangle (buffers, shaders, pipeline)
     async initializeResources() {
-        // 🔺 Buffers
+        // Buffers
         this.positionBuffer = createBuffer(
             this.device,
             positions,
@@ -200,7 +191,7 @@ class Renderer {
             GPUBufferUsage.INDEX
         );
 
-        // 🖍️ Shaders
+        // Shaders
         const vsmDesc = {
             code: vertShaderCode,
         };
@@ -216,9 +207,9 @@ class Renderer {
         // };
         // this.compModule = this.device.createShaderModule(compDesc);
 
-        // ⚗️ Graphics Pipeline
+        // Graphics Pipeline
 
-        // 🔣 Input Assembly
+        // Input Assembly
         const positionAttribDesc: GPUVertexAttribute = {
             shaderLocation: 0, // [[location(0)]]
             offset: 0,
@@ -250,14 +241,14 @@ class Renderer {
             stepMode: "vertex",
         };
 
-        // 🌑 Depth
+        // Depth
         const depthStencil: GPUDepthStencilState = {
             depthWriteEnabled: true,
             depthCompare: "less",
             format: "depth24plus-stencil8",
         };
 
-        // 🦄 Uniform Data
+        // Uniform Data
 
         const sampler = this.device.createSampler({
             magFilter: "linear",
@@ -284,7 +275,7 @@ class Renderer {
         const pipelineLayoutDesc = { bindGroupLayouts: [bindGroupLayout] };
         const layout = this.device.createPipelineLayout(pipelineLayoutDesc);
 
-        // 🎭 Shader Stages
+        // Shader Stages
         const vertex: GPUVertexState = {
             module: this.vertModule,
             entryPoint: "main",
@@ -303,7 +294,7 @@ class Renderer {
             targets: [colorState],
         };
 
-        // 🟨 Rasterization
+        // Rasterization
         const primitive: GPUPrimitiveState = {
             frontFace: "cw",
             cullMode: "none",
@@ -346,7 +337,7 @@ class Renderer {
         this.textureDataBuffer = createBuffer(
             this.device,
             textureData,
-            GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE
+            GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE
         );
         this.outTexture = this.device.createTexture({
             size: {
@@ -463,7 +454,7 @@ class Renderer {
                     binding: 1,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: {
-                        type: "storage",
+                        type: "read-only-storage",
                     },
                 },
                 {
@@ -531,17 +522,17 @@ class Renderer {
         );
     }
 
-    // ↙️ Resize swapchain, frame buffer attachments
+    // Resize swapchain, frame buffer attachments
     resizeBackings() {
-        // ⛓️ Swapchain
+        // Swapchain
         if (!this.context) {
             this.context = this.canvas.getContext("webgpu");
-            this.presentationFormat = this.context.getPreferredFormat(
-                this.adapter
-            );
+            this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
             const canvasConfig: GPUCanvasConfiguration = {
                 device: this.device,
                 format: this.presentationFormat,
+                alphaMode: "opaque",
                 usage:
                     GPUTextureUsage.RENDER_ATTACHMENT |
                     GPUTextureUsage.COPY_SRC,
@@ -560,19 +551,21 @@ class Renderer {
         this.depthTextureView = this.depthTexture.createView();
     }
 
-    // ✍️ Write commands to send to the GPU
+    // Write commands to send to the GPU
     encodeCommands() {
         let colorAttachment: GPURenderPassColorAttachment = {
             view: this.colorTextureView,
-            loadValue: { r: 0, g: 0, b: 0, a: 1 },
+            clearValue: { r: 0, g: 0, b: 0, a: 1 },
+            loadOp: "clear",
             storeOp: "store",
         };
 
         const depthAttachment: GPURenderPassDepthStencilAttachment = {
             view: this.depthTextureView,
-            depthLoadValue: 1,
+            depthClearValue: 1,
+            depthLoadOp: "clear",
             depthStoreOp: "store",
-            stencilLoadValue: "load",
+            stencilLoadOp: "load",
             stencilStoreOp: "store",
         };
 
@@ -583,15 +576,13 @@ class Renderer {
 
         const commandEncoder = this.device.createCommandEncoder();
 
-        if (!this.isPaused) {
-            const passEncoder = commandEncoder.beginComputePass();
-            passEncoder.setPipeline(this.computePipeline);
-            passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
-            passEncoder.dispatch(this.rez, this.rez);
-            passEncoder.endPass();
-        }
+        const passEncoder = commandEncoder.beginComputePass();
+        passEncoder.setPipeline(this.computePipeline);
+        passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
+        passEncoder.dispatchWorkgroups(this.rez, this.rez);
+        passEncoder.end();
 
-        // 🖌️ Encode drawing commands
+        // Encode drawing commands
         this.passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
         this.passEncoder.setPipeline(this.pipeline);
         this.passEncoder.setBindGroup(0, this.uniformBindGroup);
@@ -614,7 +605,7 @@ class Renderer {
         this.passEncoder.setVertexBuffer(2, this.uvsBuffer);
         this.passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
         this.passEncoder.drawIndexed(6, 1);
-        this.passEncoder.endPass();
+        this.passEncoder.end();
 
         this.queue.submit([commandEncoder.finish()]);
     }
@@ -635,22 +626,33 @@ class Renderer {
         this.colorTextureView = this.colorTexture.createView();
 
         // Write and submit commands to queue
-
         this.encodeCommands();
 
-        if (this.paramsNeedUpdate) {
-            this.paramsNeedUpdate = false;
+        this.simParamData[0] = this.seedRadius;
+        this.simParamData[1] = this.nstates;
+        this.simParamData[2] = this.rez;
+        this.simParamData[3] = this.rowPitch;
+        this.simParamData[4] = this.mousex;
+        this.simParamData[5] = this.mousey;
+        this.simParamData[6] = this.mouse;
 
-            this.simParamData[0] = this.seedRadius;
-            this.simParamData[1] = this.nstates;
-            this.simParamData[2] = this.rez;
-            this.simParamData[3] = this.rowPitch;
-            this.simParamData[4] = this.mousex;
-            this.simParamData[5] = this.mousey;
-            this.simParamData[6] = this.mouse;
+        let upload = this.device.createBuffer({
+            size: this.simParamData.byteLength,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true,
+        });
+        new Float32Array(upload.getMappedRange()).set(this.simParamData);
+        upload.unmap();
 
-            this.queue.writeBuffer(this.simParamBuffer, 0, this.simParamData);
-        }
+        let commandEncoder = this.device.createCommandEncoder();
+        commandEncoder.copyBufferToBuffer(
+            upload,
+            0,
+            this.simParamBuffer,
+            0,
+            this.simParamData.byteLength
+        );
+        this.queue.submit([commandEncoder.finish()]);
 
         //
 

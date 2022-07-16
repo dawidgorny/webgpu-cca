@@ -1,21 +1,21 @@
-[[block]] struct SimParams {
-    seedRadius : f32;
-    nstates : f32;
-    rez : f32;
-    rowPitch : f32;
-    mousex : f32;
-    mousey : f32;
-    mouse : f32;
+struct SimParams {
+    seedRadius : f32,
+    nstates : f32,
+    rez : f32,
+    rowPitch : f32,
+    mousex : f32,
+    mousey : f32,
+    mouse : f32
 };
 
-[[block]] struct Cells {
-    data : array<f32>;
+struct Cells {
+    data : array<f32>
 };
 
-[[binding(0), group(0)]] var<uniform> params : SimParams;
-[[binding(1), group(0)]] var<storage, read> currentCells : Cells;
-[[binding(2), group(0)]] var<storage, write> cells : Cells;
-[[binding(3), group(0)]] var outputTex : texture_storage_2d<rgba8unorm, write>;
+@binding(0) @group(0) var<uniform> params : SimParams;
+@binding(1) @group(0) var<storage, read> currentCells : Cells;
+@binding(2) @group(0) var<storage, read_write> cells : Cells;
+@binding(3) @group(0) var outputTex : texture_storage_2d<rgba8unorm, write>;
 
 // via "The Art of Code" on Youtube
 fn Random(p : vec2<f32>) -> vec2<f32> {
@@ -38,8 +38,8 @@ fn renderColor(state : f32, statesNum : f32) -> vec4<f32> {
     return vec4<f32>(v, v, v, 1.0);
 }
 
-[[stage(compute), workgroup_size(64)]]
-fn main([[builtin(global_invocation_id)]] GlobalInvocationID : vec3<u32>) {
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     // var index : u32 = u32(GlobalInvocationID.x);
     var coords : vec2<i32> = vec2<i32>(GlobalInvocationID.xy);
     var cellIdx : u32 = toCellIndex(coords);
