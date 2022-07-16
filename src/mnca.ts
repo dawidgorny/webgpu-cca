@@ -3,25 +3,25 @@ import compShaderCode from "./mnca.comp.wgsl?raw";
 
 const vertShaderCode = `
 struct VSOut {
-    [[builtin(position)]] Position: vec4<f32>;
-    [[location(0)]] texCoord: vec2<f32>;
+    @builtin(position) Position: vec4<f32>,
+    @location(0) texCoord: vec2<f32>
 };
 
-[[stage(vertex)]]
-fn main([[location(0)]] inPos: vec3<f32>,
-        [[location(1)]] inColor: vec3<f32>, 
-        [[location(2)]] inUV: vec2<f32>) -> VSOut {
+@vertex
+fn main(@location(0) inPos: vec3<f32>,
+        @location(1) inColor: vec3<f32>, 
+        @location(2) inUV: vec2<f32>) -> VSOut {
     var vsOut: VSOut;
     vsOut.Position = vec4<f32>(inPos, 1.0);
     vsOut.texCoord = inUV;
     return vsOut;
 }`;
 const fragShaderCode = `
-[[group(0), binding(0)]] var mainSampler: sampler;
-[[group(0), binding(1)]] var mainTexture: texture_2d<f32>;
+@group(0) @binding(0) var mainSampler: sampler;
+@group(0) @binding(1) var mainTexture: texture_2d<f32>;
 
-[[stage(fragment)]]
-fn main([[location(0)]] texCoord: vec2<f32>) -> [[location(0)]] vec4<f32> {
+@fragment
+fn main(@location(0) texCoord: vec2<f32>) -> @location(0) vec4<f32> {
     // return vec4<f32>(1.0, 0.0, 0.0, 1.0);
     return textureSample(mainTexture, mainSampler, texCoord);
 }`;
@@ -72,21 +72,21 @@ class Renderer {
 
     canvas: HTMLCanvasElement;
 
-    // ⚙️ API Data Structures
+    // API Data Structures
     adapter: GPUAdapter;
     device: GPUDevice;
     queue: GPUQueue;
 
     presentationFormat: GPUTextureFormat;
 
-    // 🎞️ Frame Backings
+    // Frame Backings
     context: GPUCanvasContext;
     colorTexture: GPUTexture;
     colorTextureView: GPUTextureView;
     depthTexture: GPUTexture;
     depthTextureView: GPUTextureView;
 
-    // 🔺 Resources
+    // Resources
     positionBuffer: GPUBuffer;
     uvsBuffer: GPUBuffer;
     colorBuffer: GPUBuffer;
@@ -137,7 +137,7 @@ class Renderer {
         });
     }
 
-    // 🏎️ Start the rendering engine
+    // Start the rendering engine
     async start() {
         if (await this.initializeAPI()) {
             this.resizeBackings();
@@ -146,7 +146,7 @@ class Renderer {
         }
     }
 
-    // 🌟 Initialize WebGPU
+    // Initialize WebGPU
     async initializeAPI(): Promise<boolean> {
         try {
             // 🏭 Entry to WebGPU
@@ -171,9 +171,9 @@ class Renderer {
         return true;
     }
 
-    // 🍱 Initialize resources to render triangle (buffers, shaders, pipeline)
+    // Initialize resources to render triangle (buffers, shaders, pipeline)
     async initializeResources() {
-        // 🔺 Buffers
+        // Buffers
         this.positionBuffer = createBuffer(
             this.device,
             positions,
@@ -191,7 +191,7 @@ class Renderer {
             GPUBufferUsage.INDEX
         );
 
-        // 🖍️ Shaders
+        // Shaders
         const vsmDesc = {
             code: vertShaderCode,
         };
@@ -207,9 +207,9 @@ class Renderer {
         // };
         // this.compModule = this.device.createShaderModule(compDesc);
 
-        // ⚗️ Graphics Pipeline
+        // Graphics Pipeline
 
-        // 🔣 Input Assembly
+        // Input Assembly
         const positionAttribDesc: GPUVertexAttribute = {
             shaderLocation: 0, // [[location(0)]]
             offset: 0,
@@ -241,14 +241,14 @@ class Renderer {
             stepMode: "vertex",
         };
 
-        // 🌑 Depth
+        // Depth
         const depthStencil: GPUDepthStencilState = {
             depthWriteEnabled: true,
             depthCompare: "less",
             format: "depth24plus-stencil8",
         };
 
-        // 🦄 Uniform Data
+        // Uniform Data
 
         const sampler = this.device.createSampler({
             magFilter: "linear",
@@ -275,7 +275,7 @@ class Renderer {
         const pipelineLayoutDesc = { bindGroupLayouts: [bindGroupLayout] };
         const layout = this.device.createPipelineLayout(pipelineLayoutDesc);
 
-        // 🎭 Shader Stages
+        // Shader Stages
         const vertex: GPUVertexState = {
             module: this.vertModule,
             entryPoint: "main",
@@ -294,7 +294,7 @@ class Renderer {
             targets: [colorState],
         };
 
-        // 🟨 Rasterization
+        // Rasterization
         const primitive: GPUPrimitiveState = {
             frontFace: "cw",
             cullMode: "none",
@@ -454,7 +454,7 @@ class Renderer {
                     binding: 1,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: {
-                        type: "storage",
+                        type: "read-only-storage",
                     },
                 },
                 {
@@ -522,17 +522,17 @@ class Renderer {
         );
     }
 
-    // ↙️ Resize swapchain, frame buffer attachments
+    // Resize swapchain, frame buffer attachments
     resizeBackings() {
-        // ⛓️ Swapchain
+        // Swapchain
         if (!this.context) {
             this.context = this.canvas.getContext("webgpu");
-            this.presentationFormat = this.context.getPreferredFormat(
-                this.adapter
-            );
+            this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
             const canvasConfig: GPUCanvasConfiguration = {
                 device: this.device,
                 format: this.presentationFormat,
+                alphaMode: "opaque",
                 usage:
                     GPUTextureUsage.RENDER_ATTACHMENT |
                     GPUTextureUsage.COPY_SRC,
@@ -551,19 +551,21 @@ class Renderer {
         this.depthTextureView = this.depthTexture.createView();
     }
 
-    // ✍️ Write commands to send to the GPU
+    // Write commands to send to the GPU
     encodeCommands() {
         let colorAttachment: GPURenderPassColorAttachment = {
             view: this.colorTextureView,
-            loadValue: { r: 0, g: 0, b: 0, a: 1 },
+            clearValue: { r: 0, g: 0, b: 0, a: 1 },
+            loadOp: "clear",
             storeOp: "store",
         };
 
         const depthAttachment: GPURenderPassDepthStencilAttachment = {
             view: this.depthTextureView,
-            depthLoadValue: 1,
+            depthClearValue: 1,
+            depthLoadOp: "clear",
             depthStoreOp: "store",
-            stencilLoadValue: "load",
+            stencilLoadOp: "load",
             stencilStoreOp: "store",
         };
 
@@ -577,10 +579,10 @@ class Renderer {
         const passEncoder = commandEncoder.beginComputePass();
         passEncoder.setPipeline(this.computePipeline);
         passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
-        passEncoder.dispatch(this.rez, this.rez);
-        passEncoder.endPass();
+        passEncoder.dispatchWorkgroups(this.rez, this.rez);
+        passEncoder.end();
 
-        // 🖌️ Encode drawing commands
+        // Encode drawing commands
         this.passEncoder = commandEncoder.beginRenderPass(renderPassDesc);
         this.passEncoder.setPipeline(this.pipeline);
         this.passEncoder.setBindGroup(0, this.uniformBindGroup);
@@ -603,7 +605,7 @@ class Renderer {
         this.passEncoder.setVertexBuffer(2, this.uvsBuffer);
         this.passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
         this.passEncoder.drawIndexed(6, 1);
-        this.passEncoder.endPass();
+        this.passEncoder.end();
 
         this.queue.submit([commandEncoder.finish()]);
     }
@@ -619,11 +621,11 @@ class Renderer {
         }
         t0 = t1;
 
-        // ⏭ Acquire next image from context
+        // Acquire next image from context
         this.colorTexture = this.context.getCurrentTexture();
         this.colorTextureView = this.colorTexture.createView();
 
-        // 📦 Write and submit commands to queue
+        // Write and submit commands to queue
         this.encodeCommands();
 
         this.simParamData[0] = this.seedRadius;
@@ -656,7 +658,7 @@ class Renderer {
 
         ++t;
 
-        // ➿ Refresh canvas
+        // Refresh canvas
         requestAnimationFrame(this.render);
     };
 }
