@@ -55,10 +55,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@webgpu/types@npm:^0.1.7":
-  version: 0.1.7
-  resolution: "@webgpu/types@npm:0.1.7"
-  checksum: 288e03be35d604b16d1091dbed6c52f9ae43e1b8100da6963f199032852b64cbdb39d3c74ca22d96534a6a4e9be82e9489f5cf6cb536df3e2afc57b60fb39095
+"@webgpu/types@npm:^0.1.23":
+  version: 0.1.23
+  resolution: "@webgpu/types@npm:0.1.23"
+  checksum: ba99d9a93b9b1b34db408e7a0b5145fe8d8c15ef439e30d87752740ebf1473b3e6007a8d4fd143554dad07969125b07aebfa006ac5826d8240d3cc0625387e31
   languageName: node
   linkType: hard
 
@@ -1247,7 +1247,7 @@ __metadata:
   dependencies:
     "@tweakpane/core": ^1.0.7
     "@tweakpane/plugin-essentials": ^0.1.4
-    "@webgpu/types": ^0.1.7
+    "@webgpu/types": ^0.1.23
     tslib: ^2.3.1
     tweakpane: ^3.0.6
     typescript: ^4.3.2
