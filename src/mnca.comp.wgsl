@@ -38,7 +38,7 @@ fn renderColor(state : f32, statesNum : f32) -> vec4<f32> {
     return vec4<f32>(v, v, v, 1.0);
 }
 
-@compute @workgroup_size(64)
+@compute @workgroup_size(64, 1, 1)
 fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     // var index : u32 = u32(GlobalInvocationID.x);
     var coords : vec2<i32> = vec2<i32>(GlobalInvocationID.xy);

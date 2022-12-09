@@ -4,7 +4,7 @@ import { Pane } from "tweakpane";
 import * as EssentialsPlugin from "@tweakpane/plugin-essentials";
 
 let size: number = parseInt(window.location.hash.substr(1));
-size = size > 9 ? size : 128;
+size = size > 9 ? size : 512;
 
 const canvas = document.getElementById("gfx") as HTMLCanvasElement;
 canvas.width = canvas.height = size;

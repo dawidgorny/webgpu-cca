@@ -590,7 +590,7 @@ class Renderer {
             const passEncoder = commandEncoder.beginComputePass();
             passEncoder.setPipeline(this.computePipeline);
             passEncoder.setBindGroup(0, this.mainBindGroup[t % 2]);
-            passEncoder.dispatchWorkgroups(this.rez, this.rez);
+            passEncoder.dispatchWorkgroups(this.rez / 64, this.rez);
             passEncoder.end();
         }
 
